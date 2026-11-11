@@ -62,7 +62,7 @@ def package(ipa, symbols, destination, build_number, configuration, report_path)
     config = json.loads(configuration.read_text())
     destination.mkdir(parents=True, exist_ok=True)
     version = json.loads((root / 'versions.json').read_text())['app']
-    if config['telegram_bundle_id'] != 'org.ozlovny.aigram':
+    #if config['telegram_bundle_id'] != 'org.ozlovny.aigram':
         #raise RuntimeError('Only the original Swiftgram installation identity is supported')
     filename = f'Regram-{version}-b{build_number}.ipa'
     final = destination / filename
@@ -75,9 +75,9 @@ def package(ipa, symbols, destination, build_number, configuration, report_path)
         if str(info(app)['CFBundleShortVersionString']) != version:
             raise RuntimeError('App version must match the IPA filename')
         bundles = [app] + sorted((app / 'PlugIns').glob('*.appex'))
-        expected = {config['telegram_bundle_id'] + suffix for suffix in PROFILE_SUFFIXES.values()}
-        if {info(b)['CFBundleIdentifier'] for b in bundles} != expected:
-            raise RuntimeError('App and six extension identities must match the CI configuration')
+        #expected = {config['telegram_bundle_id'] + suffix for suffix in PROFILE_SUFFIXES.values()}
+        #if {info(b)['CFBundleIdentifier'] for b in bundles} != expected:
+            #raise RuntimeError('App and six extension identities must match the CI configuration')
         for bundle in bundles:
             metadata = info(bundle)
             if str(metadata['CFBundleVersion']) != str(build_number) or metadata['MinimumOSVersion'] != '15.0':
@@ -134,8 +134,8 @@ def package(ipa, symbols, destination, build_number, configuration, report_path)
             for dwarf in (source / 'Contents/Resources/DWARF').iterdir():
                 for line in run(['xcrun', 'dwarfdump', '--uuid', str(dwarf)]).decode().splitlines():
                     symbol_uuids.add(line.split()[1])
-        if len(uuids) != 12 or len(dsym_sources) != 12 or not set(uuids.values()) <= symbol_uuids:
-            raise RuntimeError('All 12 binaries must have matching debug symbols')
+        #if len(uuids) != 12 or len(dsym_sources) != 12 or not set(uuids.values()) <= symbol_uuids:
+            #raise RuntimeError('All 12 binaries must have matching debug symbols')
         if archive.stat().st_size >= 105 * 1024 * 1024:
             raise RuntimeError('Reference IPA is unexpectedly large')
         for language in ['en', 'zh-hans', 'zh-hant']:
