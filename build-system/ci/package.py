@@ -62,7 +62,7 @@ def package(ipa, symbols, destination, build_number, configuration, report_path)
     config = json.loads(configuration.read_text())
     destination.mkdir(parents=True, exist_ok=True)
     version = json.loads((root / 'versions.json').read_text())['app']
-    if config['telegram_bundle_id'] != 'app.swiftgram.ios':
+    if config['telegram_bundle_id'] != 'org.ozlovny.aigram':
         raise RuntimeError('Only the original Swiftgram installation identity is supported')
     filename = f'Regram-{version}-b{build_number}.ipa'
     final = destination / filename
