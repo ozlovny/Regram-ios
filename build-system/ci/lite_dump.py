@@ -1,4 +1,4 @@
-б#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Выписывает ключевые куски кода в reports/lite-dump.txt. Ничего не меняет."""
 import os
 import re
