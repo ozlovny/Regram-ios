@@ -1,0 +1,453 @@
+# files: 38108, source files scanned: 14127
+
+## Files by name (Glass/AppDelegate/SharedAccountContext/Preload/Regram...)
+Regram/Playground/Sources/AppDelegate.swift
+Regram/RGAppBadgeAssets/Images.xcassets/RegramAppBadge.imageset/Regram@3x.png
+Regram/RGSettingsUI/Images.xcassets/RegramContextMenu.imageset/regram_context_menu.pdf
+Regram/RGSettingsUI/Images.xcassets/RegramPro.imageset/Regram-dark.png
+Regram/RGSettingsUI/Images.xcassets/RegramPro.imageset/Regram-light.png
+Regram/RGSettingsUI/Images.xcassets/RegramSettings.imageset/Regram-dark.png
+Regram/RGSettingsUI/Images.xcassets/RegramSettings.imageset/Regram-light.png
+Telegram/Watch/App/Assets.xcassets/AppIcon.appiconset/Regram.png
+Telegram/WatchApp/tgwatch Watch App/Assets.xcassets/AppIcon.appiconset/Regram.png
+Telegram/WidgetKitWidget/WidgetImages.xcassets/RegramUpdateIcon.imageset/Regram-dark.png
+Telegram/WidgetKitWidget/WidgetImages.xcassets/RegramUpdateIcon.imageset/Regram-light.png
+Tests/AnimationCacheTest/Sources/AppDelegate.swift
+Tests/CallUITest/Sources/AppDelegate.swift
+Tests/ComposerHarness/AppContext/HarnessSharedAccountContext+Generated.swift
+Tests/ComposerHarness/AppContext/HarnessSharedAccountContext.swift
+Tests/ComposerHarness/Sources/AppDelegate.swift
+Tests/GlassCapture/Sources/GlassCapture.swift
+Tests/WidgetHarness/Sources/AppDelegate.swift
+build-system/check-regram-branding.py
+build-system/check-regram-features.py
+build-system/check-regram-retention.py
+build-system/check-regram-story-flags.py
+docs/context-menu-liquid-morph.md
+docs/regram-upstream-sync.md
+prototypes/ContextMenuMorph/Tests/LiquidMorphTests.swift
+submodules/MediaPlayer/Sources/TimeBasedVideoPreload.swift
+submodules/PremiumUI/Resources/sunglasses.png
+submodules/QrCodeUI/Sources/GlassButtonNode.swift
+submodules/SettingsUI/Sources/Data and Storage/EnergySavingSettingsScreen.swift
+submodules/TelegramCore/Sources/State/ChatHistoryPreloadManager.swift
+submodules/TelegramCore/Tests/StateSync/PreloadFillConfirmationTests.swift
+submodules/TelegramUI/Components/Chat/ChatMessageItemCommon/Sources/ChatMessageBubblelessGlass.swift
+submodules/TelegramUI/Components/Chat/ChatMessageItemCommon/Tests/ChatMessageBubblelessGlassTests.swift
+submodules/TelegramUI/Components/Chat/ChatTextInputPanelNode/Tests/SendButtonGlassColorTests.swift
+submodules/TelegramUI/Components/ChatTitleView/Tests/ChatTitleGlassPillContentWrapperTests.swift
+submodules/TelegramUI/Components/CoreList/CoreListDemo/AppDelegate.swift
+submodules/TelegramUI/Components/GlassBackgroundComponent/Sources/GlassBackgroundComponent.swift
+submodules/TelegramUI/Components/GlassBackgroundComponent/Sources/LegacyGlassView.swift
+submodules/TelegramUI/Components/GlassBarButtonComponent/Sources/GlassBarButtonComponent.swift
+submodules/TelegramUI/Components/GlassControls/Sources/GlassControlGroup.swift
+submodules/TelegramUI/Components/GlassControls/Sources/GlassControlPanel.swift
+submodules/TelegramUI/Components/LensTransition/Sources/LiquidMorphTransition.swift
+submodules/TelegramUI/Components/LiquidGlassShapes/Metal/LiquidGlassShapes.metal
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassBackdropLayers.swift
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesLayer.swift
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesPipelines.swift
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesTypes.swift
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassSurfaceReleasePolicy.swift
+submodules/TelegramUI/Components/LiquidLens/Sources/LiquidLensFlex.swift
+submodules/TelegramUI/Components/LiquidLens/Sources/LiquidLensMotionPlan.swift
+submodules/TelegramUI/Components/LiquidLens/Sources/LiquidLensView.swift
+submodules/TelegramUI/Components/LiquidLens/Tests/LiquidLensFlexTests.swift
+submodules/TelegramUI/Components/LiquidLens/Tests/LiquidLensPunchoutTests.swift
+submodules/TelegramUI/Components/MediaGrid/Demo/AppDelegate.swift
+submodules/TelegramUI/Components/NavigationBarComponent/Sources/NavigationBarGlassAnimation.swift
+submodules/TelegramUI/Components/NavigationBarComponent/Sources/NavigationBarGlassHold.swift
+submodules/TelegramUI/Components/NavigationBarComponent/Sources/NavigationBarGlassImages.swift
+submodules/TelegramUI/Components/NavigationBarComponent/Tests/GlassContextExtractableContainerTests.swift
+submodules/TelegramUI/Components/NavigationBarComponent/Tests/NavigationBarGlassHoldTests.swift
+submodules/TelegramUI/Components/NavigationExpansionTransition/Tests/GlassShapeKeyframesTests.swift
+submodules/TelegramUI/Components/QrStudioScreen/Sources/QrStudioGlassButtonView.swift
+submodules/TelegramUI/Components/QrStudioScreen/Sources/QrStudioThemePreload.swift
+submodules/TelegramUI/Components/RichTextEditor/Demo/Sources/AppDelegate.swift
+submodules/TelegramUI/Components/RichTextEditor/Host/App/AppDelegate.swift
+submodules/TelegramUI/Components/RichTextEditor/Host/Engine/App/IDAppDelegate.h
+submodules/TelegramUI/Components/RichTextEditor/Host/Engine/App/IDAppDelegate.m
+submodules/TelegramUI/Components/StaticGlassBackground/Sources/StaticGlassBackground.swift
+submodules/TelegramUI/Components/StaticGlassBackground/Sources/StaticGlassBackgroundView.swift
+submodules/TelegramUI/Components/StaticGlassBackground/Tests/StaticGlassBackgroundTests.swift
+submodules/TelegramUI/Components/StaticGlassBackground/Tools/make_static_glass.py
+submodules/TelegramUI/Images.xcassets/Item List/GlassEdge40x40.imageset/18Glass@2x.png
+submodules/TelegramUI/Images.xcassets/Item List/GlassEdge40x40.imageset/18Glass@3x.png
+submodules/TelegramUI/Resources/StaticGlass/static-glass-capsule-r10-dark.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-capsule-r10-light.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-capsule-r10-media.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-capsule-r10-tint-000000a100-light.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-capsule-r10-tint-FFFFFFa100-dark.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-capsule-r10-tint-FFFFFFa80-light.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-capsule-r15-dark.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-capsule-r15-light.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-capsule-r15-tint-000000a100-light.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-capsule-r15-tint-FFFFFFa100-dark.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-capsule-r15-tint-FFFFFFa80-light.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-capsule-r21-dark.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-capsule-r21-light.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-circle-r15-dark.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-circle-r15-light.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-circle-r15-tint-000000a100-light.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-circle-r15-tint-FFFFFFa100-dark.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-circle-r15-tint-FFFFFFa80-light.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-circle-r24-dark.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-circle-r24-light.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-circle-r24-media.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-circle-r24-tint-000000a100-light.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-circle-r24-tint-FFFFFFa100-dark.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-rect-r12-dark.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-rect-r12-light.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-rect-r12-media.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-vcapsule-r15-dark.bin
+submodules/TelegramUI/Resources/StaticGlass/static-glass-vcapsule-r15-light.bin
+submodules/TelegramUI/Sources/AppDelegate.swift
+submodules/TelegramUI/Sources/SharedAccountContext.swift
+third-party/widget-sandbox/corpus/attacks/markup-link-modulepreload.html
+third-party/widget-sandbox/corpus/attacks/markup-link-preload.html
+(104 total)
+
+## Info.plist files
+Regram/Playground/Resources/Info.plist
+Regram/RGTypography/Tests/Info.plist
+Regram/SwiftSoup/Sources/Info.plist
+Telegram/NotificationService/Info.plist
+Telegram/Share/Info.plist
+Telegram/Telegram-iOS/Info.plist
+Telegram/Watch/App/Info.plist
+Telegram/Watch/Extension/Info.plist
+Telegram/WatchApp/tgwatch Watch App/Info.plist
+Telegram/WidgetKitWidget/Info.plist
+submodules/BrowserUI/Info.plist
+submodules/Camera/Info.plist
+submodules/ChatMessageBackground/Info.plist
+submodules/DeviceLocationManager/Info.plist
+submodules/GraphUI/Info.plist
+submodules/HorizontalPeerItem/Info.plist
+submodules/InAppPurchaseManager/Info.plist
+submodules/LocalAuth/Info.plist
+submodules/ManagedAnimationNode/Info.plist
+submodules/OverlayStatusController/Info.plist
+submodules/ProgressNavigationButtonNode/Info.plist
+submodules/QrCode/Info.plist
+submodules/SoftwareVideo/Info.plist
+submodules/TelegramUI/Components/CoreList/CoreListDemo/Info.plist
+submodules/TelegramUI/Components/GroupStickerPackSetupController/Info.plist
+submodules/TelegramUI/Components/MediaGrid/Demo/Info.plist
+submodules/TelegramUI/Components/RichTextEditor/Host/Engine/Config/Info.plist
+submodules/TelegramUI/Sources/Info.plist
+third-party/libjxl/libjxl/third_party/lcms/Projects/mac/LittleCMS/Info.plist
+third-party/recaptcha/RecaptchaEnterprise.xcframework/Info.plist
+third-party/recaptcha/RecaptchaEnterprise.xcframework/ios-arm64_arm64e/RecaptchaEnterprise.framework/Info.plist
+third-party/recaptcha/RecaptchaEnterprise.xcframework/ios-arm64_x86_64-simulator/RecaptchaEnterprise.framework/Info.plist
+third-party/recaptcha/RecaptchaEnterprise.xcframework/xros-arm64-simulator/RecaptchaEnterprise.framework/Info.plist
+third-party/recaptcha/RecaptchaEnterprise.xcframework/xros-arm64/RecaptchaEnterprise.framework/Info.plist
+
+## Top files: timers (total 610 in 256 files)
+   24  submodules/TelegramVoip/Sources/IpcGroupCallContext.swift
+   14  submodules/TelegramUI/Sources/SharedWakeupManager.swift
+   11  submodules/TelegramUI/Sources/ChatHistoryListNode.swift
+    8  submodules/MTProtoRustEngine/Sources/MTProtoRustEngine/RustNetworkSession.swift
+    7  submodules/TelegramUI/Components/MediaEditor/Sources/MediaEditor.swift
+    7  submodules/MediaPlayer/Sources/MediaPlayer.swift
+    7  submodules/TelegramCore/Sources/Utils/MessageReadMetricsTracker.swift
+    7  submodules/TelegramCore/Sources/TelegramEngine/Calls/GroupCalls.swift
+    6  submodules/TelegramVoip/Sources/ReflectorBenchmark.swift
+    6  submodules/TelegramUI/Components/EntityKeyboard/Sources/EntityKeyboardTopPanelComponent.swift
+    6  submodules/TelegramUI/Components/CameraScreen/Sources/FocusCrosshairsView.swift
+    6  submodules/SolidRoundedButtonNode/Sources/SolidRoundedButtonNode.swift
+    6  submodules/SparseItemGrid/Sources/SparseItemGridScrollingArea.swift
+    6  submodules/Display/Source/ListView.swift
+    6  submodules/TelegramCallsUI/Sources/PresentationGroupCall.swift
+
+## Top files: blur/visual effect (total 661 in 122 files)
+   66  submodules/LegacyComponents/Sources/GPUImageGaussianBlurFilter.m
+   27  submodules/TelegramUI/Components/GlassBackgroundComponent/Sources/LegacyGlassView.swift
+   26  submodules/TelegramUI/Components/SpaceWarpView/Sources/SpaceWarpView.swift
+   20  submodules/LegacyComponents/Sources/TGPhotoCropView.m
+   20  submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesLayer.swift
+   19  submodules/LegacyComponents/Sources/PGPhotoGaussianBlurFilter.m
+   17  submodules/TelegramUI/Components/NavigationBarComponent/Sources/NavigationBarPlatterTransitionView.swift
+   16  submodules/LegacyComponents/Sources/TGVideoMessageCaptureController.m
+   16  submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassBackdropLayers.swift
+   16  submodules/TelegramUI/Components/Settings/WallpaperGalleryScreen/Sources/BlurredImageNode.swift
+   15  submodules/UIKitRuntimeUtils/Source/UIKitRuntimeUtils/UIKitUtils.m
+   12  submodules/TelegramUI/Sources/NotificationItemContainerNode.swift
+   11  submodules/UIKitRuntimeUtils/Source/UIKitRuntimeUtils/UIViewController+Navigation.m
+   10  submodules/TelegramUI/Components/Stories/ForwardInfoPanelComponent/Sources/ForwardInfoPanelComponent.swift
+   10  submodules/TelegramUI/Components/CameraScreen/Sources/CameraScreen.swift
+
+## Top files: glass (total 4181 in 448 files)
+  200  submodules/ChatPresentationInterfaceState/Sources/ChatPresentationInterfaceState.swift
+  105  submodules/TelegramUI/Components/NavigationBarComponent/Sources/NavigationBarInPlaceAnimation.swift
+  102  submodules/TelegramUI/Components/GlassBackgroundComponent/Sources/GlassBackgroundComponent.swift
+   95  submodules/TelegramUI/Components/NavigationBarComponent/Tests/NavigationBarComponentViewTests.swift
+   77  submodules/TelegramUI/Components/NavigationBarComponent/Sources/NavigationBarPlatterTransitionView.swift
+   75  submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesTypes.swift
+   75  submodules/AttachmentUI/Sources/AttachmentController.swift
+   68  submodules/TelegramUI/Components/ChatTitleView/Sources/ChatTitleComponent.swift
+   67  submodules/TelegramUI/Components/StaticGlassBackground/Tests/StaticGlassBackgroundTests.swift
+   66  submodules/TelegramUI/Components/Chat/ChatTextInputActionButtonsNode/Sources/ChatTextInputActionButtonsNode.swift
+   59  submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesPipelines.swift
+   54  submodules/TelegramUI/Components/NavigationBarNode/Tests/NavigationBarNodeTests.swift
+   54  submodules/TelegramUI/Components/NavigationBarComponent/Sources/NavigationBarGlassAnimation.swift
+   52  submodules/SearchBarNode/Sources/SearchBarPlaceholderNode.swift
+   51  submodules/TelegramUI/Components/Chat/ChatTextInputPanelNode/Sources/ChatTextInputPanelNode.swift
+
+## Top files: display link (total 776 in 119 files)
+   55  submodules/Display/Source/DisplayLinkAnimator.swift
+   24  submodules/TelegramUI/Components/ChatMediaEditorScreen/Sources/ChatMediaEditorScreenLivePhotoPlayback.swift
+   21  submodules/LegacyComponents/Sources/POPAnimator.mm
+   21  submodules/Display/Source/ListView.swift
+   20  submodules/LegacyComponents/Sources/PGVideoMovie.m
+   18  submodules/LegacyComponents/Sources/TGProxyWindow.m
+   18  submodules/LegacyComponents/Sources/TGProgressSpinnerView.m
+   18  submodules/OverlayStatusController/Impl/Sources/OverlayStatusControllerImpl/ProxyWindow.m
+   18  submodules/OverlayStatusController/Impl/Sources/OverlayStatusControllerImpl/ProgressSpinnerView.m
+   17  submodules/LegacyComponents/Sources/TGModernConversationInputMicButton.m
+   17  submodules/InstantPageUI/Sources/InstantPageDetailsNode.swift
+   16  submodules/TelegramUI/Sources/ChatHistoryListNode.swift
+   16  submodules/TelegramUI/Components/ChatTextInputMediaRecordingButton/Sources/ChatTextInputAudioRecordingOverlayButton.swift
+   14  submodules/TelegramUI/Components/MediaEditor/Sources/UniversalTextureSource.swift
+   13  submodules/TelegramUI/Components/LensTransition/Sources/LiquidMorphTransition.swift
+
+## Top files: shadow/mask (offscreen) (total 626 in 242 files)
+   25  submodules/AsyncDisplayKit/Source/_ASPendingState.mm
+   13  submodules/TelegramUI/Components/EmojiStatusSelectionComponent/Sources/EmojiStatusSelectionComponent.swift
+   12  submodules/TelegramUI/Components/NavigationExpansionTransition/Tests/NavigationExpansionRendererTests.swift
+   11  submodules/DrawingUI/Sources/DrawingNeonTool.swift
+   11  submodules/ComponentFlow/Source/Base/CombinedComponent.swift
+   10  submodules/TelegramUI/Components/MediaEditorScreen/Sources/MediaEditorScreen.swift
+   10  submodules/TelegramUI/Components/NavigationExpansionTransition/Sources/NavigationExpansionRendererImpl.swift
+    9  submodules/TelegramUI/Components/Calls/CallScreen/Sources/Components/ContentOverlayButton.swift
+    9  submodules/InstantPageUI/Sources/InstantPageRenderer.swift
+    8  submodules/AsyncDisplayKit/Source/ASDisplayNode+UIViewBridge.mm
+    8  submodules/TelegramUI/Components/Chat/ChatMessageBubbleItemNode/Sources/ChatMessageBubbleItemNode.swift
+    8  submodules/TelegramUI/Components/TextLoadingEffect/Sources/TextLoadingEffect.swift
+    8  submodules/TelegramUI/Components/ContextControllerImpl/Sources/ContextControllerExtractedPresentationNode.swift
+    7  submodules/TelegramUI/Components/Wallet/WalletCardComponent/Sources/WalletCardComponent.swift
+    7  submodules/TelegramUI/Components/Settings/AutomaticBusinessMessageSetupScreen/Sources/AutomaticBusinessMessageSetupScreen.swift
+
+## Top files: lottie/stickers (total 825 in 188 files)
+   29  submodules/TelegramUI/Components/Chat/ChatMessageInteractiveMediaNode/Sources/ChatMessageInteractiveMediaNode.swift
+   23  submodules/AnimatedStickerNode/Sources/AnimatedStickerNode.swift
+   22  submodules/ReactionSelectionNode/Sources/ReactionContextNode.swift
+   21  submodules/ReactionSelectionNode/Sources/ReactionSelectionNode.swift
+   18  submodules/TelegramUI/Components/Chat/ChatMessageAnimatedStickerItemNode/Sources/ChatMessageAnimatedStickerItemNode.swift
+   14  submodules/ChatListUI/Sources/ChatListSearchListPaneNode.swift
+   13  submodules/SlotMachineAnimationNode/Sources/SlotMachineAnimationNode.swift
+   12  submodules/TelegramUI/Components/EmojiTextAttachmentView/Sources/EmojiTextAttachmentView.swift
+   12  submodules/Components/ReactionListContextMenuContent/Sources/ReactionListContextMenuContent.swift
+   11  Telegram/WatchApp/Packages/RLottieKit/Package.swift
+   11  submodules/TelegramUI/Components/Chat/ChatQrCodeScreen/Sources/ChatQrCodeScreen.swift
+   10  submodules/UndoUI/Sources/UndoOverlayControllerNode.swift
+    9  submodules/PasswordSetupUI/Sources/TwoFactorAuthDataInputScreen.swift
+    9  submodules/AnimatedStickerNode/Sources/DirectAnimatedStickerNode.swift
+    8  submodules/PasswordSetupUI/Sources/TwoFactorAuthSplashScreen.swift
+
+## Top files: preload (total 2059 in 321 files)
+   98  submodules/TelegramCore/Sources/State/ChatHistoryPreloadManager.swift
+   91  submodules/TelegramUI/Components/MediaGridPhotoLibrary/Sources/ImageLoadScheduler.swift
+   71  submodules/TelegramUI/Sources/ChatHistoryListNode.swift
+   52  third-party/webrtc/absl/absl/base/prefetch.h
+   50  submodules/TelegramUI/Sources/PrefetchManager.swift
+   48  Telegram/WatchApp/Packages/RLottieKit/Sources/RLottieCore/rlottie/src/vector/pixman/pixman-arm-neon-asm.h
+   42  submodules/SettingsUI/Sources/Data and Storage/AutodownloadMediaCategoryController.swift
+   40  submodules/TelegramUI/Components/MediaGridPhotoLibrary/Tests/ImageLoadSchedulerTests.swift
+   40  submodules/TelegramUI/Components/CoreList/CoreListDemoTests/CoreVirtualListAnimationTests.swift
+   36  submodules/HLSPlayback/Sources/HLSPlaybackController.swift
+   36  submodules/TelegramUI/Components/Stories/StoryContainerScreen/Sources/StoryChatContent.swift
+   34  submodules/AsyncDisplayKit/Source/ASDisplayNode.mm
+   31  submodules/TelegramUI/Sources/ChatControllerContentData.swift
+   28  submodules/TelegramUI/Sources/InChatPrefetchManager.swift
+   28  submodules/TelegramUI/Components/MediaGrid/Sources/MediaGridView.swift
+
+## Top files: energy flags (total 399 in 108 files)
+   22  submodules/PasscodeUI/Sources/PasscodeEntryControllerNode.swift
+   21  submodules/TelegramUIPreferences/Sources/MediaAutoDownloadSettings.swift
+   20  submodules/TelegramUI/Components/Chat/ChatTextInputPanelNode/Sources/ChatTextInputPanelNode.swift
+   18  submodules/SettingsUI/Sources/Data and Storage/EnergySavingSettingsScreen.swift
+   14  submodules/TelegramUI/Sources/SharedAccountContext.swift
+   13  submodules/ChatListUI/Sources/Node/ChatListItem.swift
+   12  submodules/TelegramUI/Components/EmojiStatusComponent/Sources/EmojiStatusComponent.swift
+   11  submodules/TelegramUI/Components/Chat/ChatMessageItemImpl/Sources/ChatMessageDateHeader.swift
+   11  submodules/ChatListSearchRecentPeersNode/Sources/ChatListSearchRecentPeersNode.swift
+   10  submodules/TelegramUI/Components/Chat/ChatInputTextNode/Sources/ChatRichTextInputNode.swift
+    9  submodules/TelegramPresentationData/Sources/PresentationData.swift
+    8  submodules/TelegramUI/Components/Chat/ChatLoadingNode/Sources/ChatLoadingNode.swift
+    8  submodules/TelegramUI/Components/EmojiTextAttachmentView/Sources/EmojiTextAttachmentView.swift
+    8  submodules/ItemListPeerItem/Sources/ItemListPeerItem.swift
+    8  submodules/MediaPickerUI/Sources/MediaPickerScreen.swift
+
+## fullTranslucency usage
+Tests/ComposerHarness/AppContext/HarnessSharedAccountContext.swift:93: /// Read at `ChatTextInputPanelNode.swift:2049` (`fullTranslucency`).
+submodules/AnimatedAvatarSetNode/Sources/AnimatedAvatarSetNode.swift:170: if self.audioLevelView == nil, value > 0.0, self.context.sharedContext.energyUsageSettings.fullTranslucency {
+submodules/ChatListUI/Sources/Node/ChatListItem.swift:5401: dustNode = InvisibleInkDustNode(textNode: nil, enableAnimations: item.context.sharedContext.energyUsageSettings.fullTranslucency)
+submodules/ChatListUI/Sources/Node/ChatListItem.swift:5884: strongSelf.setRevealOptions((left: [], right: []), enableAnimations: item.context.sharedContext.energyUsageSettings.fullTranslucency)
+submodules/ChatListUI/Sources/Node/ChatListItem.swift:5886: strongSelf.setRevealOptions((left: peerLeftRevealOptions, right: peerRevealOptions), enableAnimations: item.context.sharedContext.energyUsageSettings.
+submodules/GalleryUI/Sources/ChatItemGalleryFooterContentNode.swift:1158: let dustNode = InvisibleInkDustNode(textNode: spoilerTextNode, enableAnimations: self.context.sharedContext.energyUsageSettings.fullTranslucency)
+submodules/TelegramUIPreferences/Sources/MediaAutoDownloadSettings.swift:271: case fullTranslucency
+submodules/TelegramUIPreferences/Sources/MediaAutoDownloadSettings.swift:289: fullTranslucency: isCapable,
+submodules/TelegramUIPreferences/Sources/MediaAutoDownloadSettings.swift:302: fullTranslucency: false,
+submodules/TelegramUIPreferences/Sources/MediaAutoDownloadSettings.swift:314: public var fullTranslucency: Bool
+submodules/TelegramUIPreferences/Sources/MediaAutoDownloadSettings.swift:324: fullTranslucency: Bool,
+submodules/TelegramUIPreferences/Sources/MediaAutoDownloadSettings.swift:333: self.fullTranslucency = fullTranslucency
+submodules/TelegramUIPreferences/Sources/MediaAutoDownloadSettings.swift:346: self.fullTranslucency = try container.decodeIfPresent(Bool.self, forKey: .fullTranslucency) ?? EnergyUsageSettings.default.fullTranslucency
+submodules/TelegramUIPreferences/Sources/MediaAutoDownloadSettings.swift:359: try container.encode(self.fullTranslucency, forKey: .fullTranslucency)
+submodules/TelegramUI/Sources/LargeEmojiAlertScreen.swift:220: self.placeholderNode.update(backgroundColor: nil, foregroundColor: theme.actionSheet.secondaryTextColor.blitOver(theme.actionSheet.itemBackgroundColor
+submodules/TelegramUI/Sources/ChatController.swift:2137: if let itemNode = itemNode, let targetView = itemNode.targetReactionView(value: chosenReaction), strongSelf.context.sharedContext.energyUsageSettings.
+submodules/TelegramUI/Sources/ChatController.swift:6243: controllerInteraction.enableFullTranslucency = context.sharedContext.energyUsageSettings.fullTranslucency
+submodules/TelegramUI/Sources/ChatControllerNode.swift:912: if strongSelf.context.sharedContext.energyUsageSettings.fullTranslucency {
+submodules/TelegramUI/Sources/ChatControllerNode.swift:2313: if self.context.sharedContext.energyUsageSettings.fullTranslucency {
+submodules/TelegramUI/Sources/ChatControllerNode.swift:3786: if self.context.sharedContext.energyUsageSettings.fullTranslucency && !isSwipeDismissal {
+submodules/TelegramUI/Sources/ChatControllerOpenMessageReactionContextMenu.swift:499: if let itemNode, let targetView = itemNode.targetReactionView(value: .stars), self.context.sharedContext.energyUsageSettings.fullTranslucency {
+submodules/TelegramUI/Sources/ChatPinnedMessageTitlePanelNode.swift:941: dustNode = InvisibleInkDustNode(textNode: spoilerTextNode.textNode, enableAnimations: strongSelf.context.sharedContext.energyUsageSettings.fullTranslu
+submodules/TelegramUI/Sources/HorizontalStickerGridItem.swift:258: placeholderNode.update(backgroundColor: nil, foregroundColor: theme.list.itemPrimaryTextColor.withMultipliedAlpha(0.05), shimmeringColor: theme.list.m
+submodules/TelegramUI/Sources/HorizontalListContextResultsChatInputPanelItem.swift:456: placeholderNode.update(backgroundColor: item.theme.list.plainBackgroundColor, foregroundColor: item.theme.list.mediaPlaceholderColor.mixedWith(item.th
+submodules/TelegramUI/Sources/Chat/ChatControllerOpenMessageContextMenu.swift:429: if self.context.sharedContext.energyUsageSettings.fullTranslucency {
+submodules/TelegramUI/Components/ChatTextInputMediaRecordingButton/Sources/ChatTextInputMediaRecordingButton.swift:349: blobView.isFlat = !self.context.sharedContext.energyUsageSettings.fullTranslucency
+submodules/TelegramUI/Components/ChatTextInputMediaRecordingButton/Sources/ChatTextInputMediaRecordingButton.swift:608: (micDecoration as? ChatRecordingBlobView)?.isFlat = !self.context.sharedContext.energyUsageSettings.fullTranslucency
+submodules/TelegramUI/Components/ChatTextInputMediaRecordingButton/Sources/ChatTextInputMediaRecordingButton.swift:609: if self.context.sharedContext.energyUsageSettings.fullTranslucency {
+submodules/TelegramUI/Components/RichTextEditorMediaView/Sources/RichTextMediaContentComponent.swift:320: dustNode = MediaDustNode(enableAnimations: context.sharedContext.energyUsageSettings.fullTranslucency)
+submodules/TelegramUI/Components/TextFieldComponent/Sources/TextFieldComponent.swift:1287: spoilerView = InvisibleInkDustView(textNode: nil, enableAnimations: component.context.sharedContext.energyUsageSettings.fullTranslucency)
+submodules/TelegramUI/Components/Chat/ChatMessageDateAndStatusNode/Sources/ChatMessageDateAndStatusNode.swift:594: blurredBackgroundColor = (selectDateFillStaticColor(theme: arguments.presentationData.theme.theme, wallpaper: arguments.presentationData.theme.wallpap
+submodules/TelegramUI/Components/Chat/ChatMessageDateAndStatusNode/Sources/ChatMessageDateAndStatusNode.swift:617: blurredBackgroundColor = (selectDateFillStaticColor(theme: arguments.presentationData.theme.theme, wallpaper: arguments.presentationData.theme.wallpap
+submodules/TelegramUI/Components/Chat/ChatLoadingNode/Sources/ChatLoadingNode.swift:28: self.backgroundNode = NavigationBackgroundNode(color: selectDateFillStaticColor(theme: theme, wallpaper: chatWallpaper), enableBlur: context.sharedCon
+submodules/TelegramUI/Components/Chat/ChatLoadingNode/Sources/ChatLoadingNode.swift:264: if context.sharedContext.energyUsageSettings.fullTranslucency {
+submodules/TelegramUI/Components/Chat/ChatLoadingNode/Sources/ChatLoadingNode.swift:270: if context.sharedContext.energyUsageSettings.fullTranslucency {
+submodules/TelegramUI/Components/Chat/ChatLoadingNode/Sources/ChatLoadingNode.swift:281: if self.context.sharedContext.energyUsageSettings.fullTranslucency {
+submodules/TelegramUI/Components/Chat/ChatEmptyNode/Sources/ChatEmptyNode.swift:1646: self.backgroundNode.updateColor(color: selectDateFillStaticColor(theme: interfaceState.theme, wallpaper: interfaceState.chatWallpaper), enableBlur: se
+submodules/TelegramUI/Components/Chat/ChatInputTextNode/Sources/ChatRichTextInputNode.swift:119: /// `textColor` / `fullTranslucency` are passed live on every call because the host's
+submodules/TelegramUI/Components/Chat/ChatInputTextNode/Sources/ChatRichTextInputNode.swift:122: func updateRichRendering(textColor: UIColor, fullTranslucency: Bool)
+submodules/TelegramUI/Components/Chat/ChatInputTextNode/Sources/ChatRichTextInputNode.swift:436: func decorateAfterTextChange(context: AnyObject, baseFontSize: CGFloat, textColor: UIColor, primaryTextColor: UIColor, accentTextColor: UIColor, spoil
+submodules/TelegramUI/Components/Chat/ChatInputTextNode/Sources/ChatRichTextInputNode.swift:480: func decorateAfterTextChange(context: AnyObject, baseFontSize: CGFloat, textColor: UIColor, primaryTextColor: UIColor, accentTextColor: UIColor, spoil
+submodules/TelegramUI/Components/Chat/ChatInputTextNode/Sources/ChatRichTextInputNode.swift:486: self.updateRichRendering(textColor: textColor, fullTranslucency: fullTranslucency)
+submodules/TelegramUI/Components/Chat/ChatInputTextNode/Sources/ChatRichTextInputNode.swift:622: self.updateRichRendering(textColor: textColor, fullTranslucency: self.lastFullTranslucency)
+submodules/TelegramUI/Components/Chat/ChatInputTextNode/Sources/ChatRichTextInputNode.swift:630: func updateRichRendering(textColor: UIColor, fullTranslucency: Bool) {
+submodules/TelegramUI/Components/Chat/ChatInputTextNode/Sources/ChatRichTextInputNode.swift:632: self.lastFullTranslucency = fullTranslucency
+submodules/TelegramUI/Components/Chat/ChatInputTextNode/Sources/ChatRichTextInputNode.swift:702: dustNode = InvisibleInkDustNode(textNode: nil, enableAnimations: fullTranslucency)
+submodules/TelegramUI/Components/Chat/ChatMessageStickerItemNode/Sources/ChatMessageStickerItemNode.swift:1207: strongSelf.placeholderNode.update(backgroundColor: nil, foregroundColor: foregroundColor, shimmeringColor: shimmeringColor, data: immediateThumbnailDa
+submodules/TelegramUI/Components/Chat/ChatMessageAnimatedStickerItemNode/Sources/ChatMessageAnimatedStickerItemNode.swift:1826: strongSelf.placeholderNode.update(backgroundColor: nil, foregroundColor: foregroundColor, shimmeringColor: shimmeringColor, data: immediateThumbnailDa
+submodules/TelegramUI/Components/Chat/ChatMessageTransferBubbleContentNode/Sources/ChatMessageTransferBubbleContentNode.swift:2170: dustNode = InvisibleInkDustNode(textNode: nil, enableAnimations: item.context.sharedContext.energyUsageSettings.fullTranslucency)
+submodules/TelegramUI/Components/Chat/ChatMessageActionBubbleContentNode/Sources/ChatMessageActionBubbleContentNode.swift:748: dustNode = InvisibleInkDustNode(textNode: nil, enableAnimations: item.context.sharedContext.energyUsageSettings.fullTranslucency)
+submodules/TelegramUI/Components/Chat/ChatMessageReplyInfoNode/Sources/ChatMessageReplyInfoNode.swift:936: dustNode = InvisibleInkDustNode(textNode: nil, enableAnimations: arguments.context.sharedContext.energyUsageSettings.fullTranslucency && !arguments.pr
+submodules/TelegramUI/Components/Chat/ChatMessageNotificationItem/Sources/ChatMessageNotificationItem.swift:514: dustNode = InvisibleInkDustNode(textNode: nil, enableAnimations: item.context.sharedContext.energyUsageSettings.fullTranslucency)
+submodules/TelegramUI/Components/Chat/ChatMessageGiftBubbleContentNode/Sources/ChatMessageGiftBubbleContentNode.swift:1327: strongSelf.placeholderNode.update(backgroundColor: nil, foregroundColor: overlayColor, shimmeringColor: shimmeringColor, data: immediateThumbnailData,
+submodules/TelegramUI/Components/Chat/ChatMessageGiftBubbleContentNode/Sources/ChatMessageGiftBubbleContentNode.swift:1497: giftMessageDustNode = InvisibleInkDustNode(textNode: giftMessageSpoilerTextNode.textNode, enableAnimations: item.context.sharedContext.energyUsageSett
+submodules/TelegramUI/Components/Chat/ChatMessageGiftBubbleContentNode/Sources/ChatMessageGiftBubbleContentNode.swift:1541: dustNode = InvisibleInkDustNode(textNode: spoilerSubtitleNode.textNode, enableAnimations: item.context.sharedContext.energyUsageSettings.fullTransluce
+submodules/TelegramUI/Components/Chat/ChatMessageItemImpl/Sources/ChatMessageDateHeader.swift:201: let fullTranslucency: Bool = self.controllerInteraction?.enableFullTranslucency ?? true
+submodules/TelegramUI/Components/Chat/ChatMessageItemImpl/Sources/ChatMessageDateHeader.swift:203: self.backgroundNode.updateColor(color: selectDateFillStaticColor(theme: self.presentationData.theme.theme, wallpaper: self.presentationData.theme.wall
+submodules/TelegramUI/Components/Chat/ChatMessageItemImpl/Sources/ChatMessageDateHeader.swift:316: let fullTranslucency: Bool = true
+submodules/TelegramUI/Components/Chat/ChatMessageItemImpl/Sources/ChatMessageDateHeader.swift:318: self.backgroundNode.updateColor(color: selectDateFillStaticColor(theme: presentationData.theme.theme, wallpaper: presentationData.theme.wallpaper), en
+submodules/TelegramUI/Components/Chat/ChatMessageItemImpl/Sources/ChatMessageDateHeader.swift:347: let fullTranslucency: Bool = true
+
+## automaticEnergyUsageShouldBeOn
+submodules/ChatListUI/Sources/ChatListController.swift:2516: return automaticEnergyUsageShouldBeOn(settings: settings)
+submodules/TelegramUI/Sources/ChatController.swift:8613: return automaticEnergyUsageShouldBeOn(settings: settings)
+submodules/TelegramUI/Sources/SharedAccountContext.swift:401: if automaticEnergyUsageShouldBeOnNow(settings: self.currentAutomaticMediaDownloadSettings) {
+submodules/TelegramUI/Sources/SharedAccountContext.swift:618: if automaticEnergyUsageShouldBeOnNow(settings: next) {
+submodules/TelegramUI/Sources/SharedAccountContext.swift:623: strongSelf.energyUsageAutomaticDisposable.set((automaticEnergyUsageShouldBeOn(settings: next)
+submodules/TelegramUI/Components/PeerInfo/PeerInfoScreen/Sources/PeerInfoData.swift:1055: return automaticEnergyUsageShouldBeOn(settings: settings)
+submodules/TelegramPresentationData/Sources/PresentationData.swift:549: public func automaticEnergyUsageShouldBeOnNow(settings: MediaAutoDownloadSettings) -> Bool {
+submodules/TelegramPresentationData/Sources/PresentationData.swift:564: public func automaticEnergyUsageShouldBeOn(settings: MediaAutoDownloadSettings) -> Signal<Bool, NoError> {
+submodules/TelegramPresentationData/Sources/PresentationData.swift:571: subscriber.putNext(automaticEnergyUsageShouldBeOnNow(settings: settings))
+submodules/TelegramPresentationData/Sources/PresentationData.swift:574: subscriber.putNext(automaticEnergyUsageShouldBeOnNow(settings: settings))
+submodules/PasscodeUI/Sources/PasscodeEntryControllerNode.swift:185: if automaticEnergyUsageShouldBeOnNow(settings: mediaAutoDownloadSettings) {
+submodules/SettingsUI/Sources/Data and Storage/EnergySavingSettingsScreen.swift:223: let isOn = automaticEnergyUsageShouldBeOnNow(settings: settings)
+
+## UIBackgroundModes
+Telegram/Telegram-iOS/Info.plist:8: <key>BGTaskSchedulerPermittedIdentifiers</key>
+Telegram/Telegram-iOS/Info.plist:145: <key>UIBackgroundModes</key>
+Telegram/Telegram-iOS/InfoBazel.plist:5: <key>BGTaskSchedulerPermittedIdentifiers</key>
+Telegram/Telegram-iOS/InfoBazel.plist:141: <key>UIBackgroundModes</key>
+submodules/TelegramUI/Sources/AppDelegate.swift:1740: BGTaskScheduler.shared.register(forTaskWithIdentifier: cleanupTaskId, using: DispatchQueue.main) { task in
+submodules/TelegramUI/Sources/AppDelegate.swift:1755: BGTaskScheduler.shared.getPendingTaskRequests(completionHandler: { tasks in
+submodules/TelegramUI/Sources/AppDelegate.swift:1765: try BGTaskScheduler.shared.submit(request)
+submodules/TelegramUI/Sources/SharedWakeupManager.swift:401: BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: backgroundProcessingTaskId)
+submodules/TelegramUI/Sources/SharedWakeupManager.swift:442: BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: backgroundStoryProcessingTaskId)
+submodules/TelegramUI/Sources/SharedWakeupManager.swift:543: BGTaskScheduler.shared.register(forTaskWithIdentifier: uploadTaskId, using: nil, launchHandler: { [weak self] task in
+submodules/TelegramUI/Sources/SharedWakeupManager.swift:627: BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: task.identifier)
+submodules/TelegramUI/Sources/SharedWakeupManager.swift:689: try BGTaskScheduler.shared.submit(request)
+submodules/TelegramUI/Sources/SharedWakeupManager.swift:694: Logger.shared.log("Wakeup", "BGTaskScheduler submit error: \(e)")
+submodules/TelegramUI/Sources/SharedWakeupManager.swift:719: BGTaskScheduler.shared.register(forTaskWithIdentifier: uploadTaskId, using: nil, launchHandler: { [weak self] task in
+submodules/TelegramUI/Sources/SharedWakeupManager.swift:805: BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: task.identifier)
+submodules/TelegramUI/Sources/SharedWakeupManager.swift:879: /*if BGTaskScheduler.supportedResources.contains(.gpu) {
+submodules/TelegramUI/Sources/SharedWakeupManager.swift:884: try BGTaskScheduler.shared.submit(request)
+submodules/TelegramUI/Sources/SharedWakeupManager.swift:889: Logger.shared.log("Wakeup", "Story BGTaskScheduler submit error: \(e)")
+submodules/TelegramUI/Components/MediaEditor/Sources/MediaEditorVideoExport.swift:314: if BGTaskScheduler.supportedResources.contains(.gpu) {
+submodules/TelegramUI/Components/MediaEditor/Sources/MediaEditorVideoExport.swift:327: if BGTaskScheduler.supportedResources.contains(.gpu) {
+
+## global animation switches
+prototypes/ContextMenuMorph/Tests/LiquidMorphTests.swift:210: UIView.setAnimationsEnabled(false)
+prototypes/ContextMenuMorph/Tests/LiquidMorphTests.swift:223: UIView.setAnimationsEnabled(enabled)
+submodules/LegacyComponents/Sources/TGHacks.m:17: static float animationDurationFactor = 1.0f;
+submodules/LegacyComponents/Sources/TGHacks.m:109: [self telegraph_setAnimationDuration:(duration * animationDurationFactor)];
+submodules/LegacyComponents/Sources/TGHacks.m:122: float lastDurationFactor = animationDurationFactor;
+submodules/LegacyComponents/Sources/TGHacks.m:123: animationDurationFactor = 0.0f;
+submodules/LegacyComponents/Sources/TGHacks.m:126: [UIView setAnimationsEnabled:false];
+submodules/LegacyComponents/Sources/TGHacks.m:131: [UIView setAnimationsEnabled:animationsWereEnabled];
+submodules/LegacyComponents/Sources/TGHacks.m:132: animationDurationFactor = lastDurationFactor;
+submodules/LegacyComponents/Sources/TGHacks.m:188: animationDurationFactor = factor;
+submodules/GalleryUI/Sources/GalleryRateToastAnimationComponent.swift:102: self.itemViews[i].layer.speed = Float(1.0 * (1.0 - component.speedFraction) + 2.0 * component.speedFraction)
+submodules/TelegramUI/Sources/NotificationItemContainerNode.swift:230: let animationDurationFactor = UIView.animationDurationFactor
+submodules/TelegramUI/Sources/NotificationItemContainerNode.swift:231: let durationFactor = animationDurationFactor > 0.0 ? animationDurationFactor : 1.0
+submodules/TelegramUI/Components/Utils/AnimatableProperty/Sources/AnimatableProperty.swift:68: let effectiveDuration = duration * UIView.animationDurationFactor()
+submodules/TelegramUI/Components/Stories/StoryPeerListComponent/Sources/StoryPeerListComponent.swift:714: self.titleTextAnimation = TitleAnimationState(duration: 0.2 * UIView.animationDurationFactor(), startTime: timestamp, fromFraction: current, toFractio
+submodules/TelegramUI/Components/Stories/StoryPeerListComponent/Sources/StoryPeerListComponent.swift:1772: duration: duration * UIView.animationDurationFactor(),
+submodules/TelegramUI/Components/Stories/StoryPeerListComponent/Sources/StoryPeerListComponent.swift:1786: duration: duration * UIView.animationDurationFactor(),
+submodules/TelegramUI/Components/LiquidLens/Sources/LiquidLensView.swift:469: let remainingHangTime = self.liftTimestamp + LiquidLensView.lensHangTime * UIView.animationDurationFactor() - CACurrentMediaTime()
+submodules/TelegramUI/Components/LiquidLens/Sources/LiquidLensView.swift:637: return max(0.01, UIView.animationDurationFactor())
+submodules/TelegramUI/Components/Chat/ChatHistoryListViewBackend/Sources/CoreListChatHistoryBackend.swift:1302: Queue.mainQueue().after(transition.duration * UIView.animationDurationFactor(), { [weak self] in
+submodules/TelegramUI/Components/Chat/ChatHistoryListViewBackend/Sources/CoreListChatHistoryBackend.swift:2199: // `UIView.animationDurationFactor()` at that same site because a NativeAnimator needs
+submodules/TelegramUI/Components/Chat/ChatMessageBubbleItemNode/Sources/ChatMessageBubbleItemNode.swift:8946: let k = Float(UIView.animationDurationFactor())
+submodules/TelegramUI/Components/Chat/QuickShareScreen/Sources/QuickShareScreen.swift:142: DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + itemDelay * UIView.animationDurationFactor(), execute: { [weak itemView] in
+submodules/TelegramUI/Components/Chat/ChatMessagePollBubbleContentNode/Sources/ChatMessagePollBubbleContentNode.swift:1144: animation.duration = percentageDuration * UIView.animationDurationFactor()
+submodules/TelegramUI/Components/Chat/ChatMessagePollBubbleContentNode/Sources/ChatMessagePollBubbleContentNode.swift:1191: animation.duration = countDuration * UIView.animationDurationFactor()
+submodules/TelegramUI/Components/Chat/ChatTextInputPanelNode/Sources/ChatTextInputPanelNode.swift:3685: DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.25 * UIView.animationDurationFactor(), execute: { [weak button] in
+submodules/TelegramUI/Components/Chat/ChatQrCodeScreen/Sources/ChatQrCodeScreen.swift:1208: self.switchThemeIconAnimator = DisplayLinkAnimator(duration: themeCrossfadeDuration * UIView.animationDurationFactor(), from: 0.0, to: 1.0, update: { 
+submodules/TelegramUI/Components/SpaceWarpView/Sources/SpaceWarpView.swift:305: shockwave.timeValue += deltaTime * (1.0 / CGFloat(UIView.animationDurationFactor()))
+submodules/TelegramUI/Components/NavigationBarNode/Sources/NavigationBarNode.swift:656: delay = duration * UIView.animationDurationFactor()
+submodules/TelegramUI/Components/PeerInfo/ProfileLevelRatingBarComponent/Sources/ProfileLevelRatingBarComponent.swift:346: deltaTime /= UIView.animationDurationFactor()
+
+## glass types
+Regram/RGInputToolbar/Sources/RGInputToolbar.swift:160: struct Glass: View {
+submodules/TelegramUI/Components/GlassBarButtonComponent/Sources/GlassBarButtonComponent.swift:9: public final class GlassBarButtonComponent: Component {
+submodules/TelegramUI/Components/GlassBarButtonComponent/Sources/GlassBarButtonComponent.swift:449: private class SimpleGlassView: UIView {
+submodules/TelegramUI/Components/Chat/ChatRecentActionsController/Sources/ChatRecentActionsControllerNode.swift:47: private final class RecentActionsGlassButtonView: UIView {
+submodules/TelegramUI/Components/Chat/ChatRecentActionsController/Sources/ChatRecentActionsControllerNode.swift:133: private final class RecentActionsGlassTextButtonView: UIView {
+submodules/TelegramUI/Components/Chat/ChatMessageItemCommon/Tests/ChatMessageBubblelessGlassTests.swift:6: final class ChatMessageBubblelessGlassTests: XCTestCase {
+submodules/TelegramUI/Components/Chat/ChatMessageSelectionInputPanelNode/Sources/ChatMessageSelectionInputPanelNode.swift:68: private final class GlassButtonView: UIView {
+submodules/TelegramUI/Components/Chat/ChatTextInputPanelNode/Tests/SendButtonGlassColorTests.swift:8: final class SendButtonGlassColorTests: XCTestCase {
+submodules/TelegramUI/Components/QrStudioScreen/Sources/QrStudioGlassButtonView.swift:46: final class QrStudioGlassButtonView: UIView {
+submodules/TelegramUI/Components/GlassControls/Sources/GlassControlPanel.swift:8: public final class GlassControlPanelComponent: Component {
+submodules/TelegramUI/Components/GlassControls/Sources/GlassControlGroup.swift:12: public final class GlassControlGroupComponent: Component {
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesLayer.swift:49: public final class LiquidGlassShapesLayer: SimpleLayer, MetalEngineSubject {
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesTypes.swift:24: public struct LiquidGlassLayerStyle: Equatable {
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesTypes.swift:50: public struct LiquidGlassAppearance: Equatable {
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesTypes.swift:93: public struct LiquidGlassCrestShape {
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesTypes.swift:118: public struct LiquidGlassCrestParameters {
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesTypes.swift:138: public struct LiquidGlassRadialShape {
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesTypes.swift:167: public struct LiquidGlassRadialParameters {
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesTypes.swift:188: public struct LiquidGlassShapesUniforms {
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesPipelines.swift:5: private final class LiquidGlassShapesBundleMarker: NSObject {
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesPipelines.swift:75: final class LiquidGlassShapesPipelines {
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesPipelines.swift:196: final class LiquidGlassShapesRenderState<Pass: LiquidGlassShapesPass, Kind: LiquidGlassShapesKind>: RenderToLayerState {
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesPipelines.swift:207: final class LiquidGlassShapesComputeState<Kind: LiquidGlassShapesKind>: ComputeState {
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassBackdropLayers.swift:10: final class LiquidGlassBackdropLayers {
+submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassSurfaceReleasePolicy.swift:7: struct LiquidGlassSurfaceReleasePolicy {
+submodules/TelegramUI/Components/StaticGlassBackground/Tests/StaticGlassBackgroundTests.swift:5: final class StaticGlassBackgroundTests: XCTestCase {
+submodules/TelegramUI/Components/StaticGlassBackground/Sources/StaticGlassBackgroundView.swift:8: public final class StaticGlassBackgroundView: UIView {
+submodules/TelegramUI/Components/StaticGlassBackground/Sources/StaticGlassBackgroundView.swift:53: private final class StaticGlassImageCache {
+submodules/TelegramUI/Components/StaticGlassBackground/Sources/StaticGlassBackground.swift:40: public struct StaticGlassAssetChoice: Equatable {
+submodules/TelegramUI/Components/StaticGlassBackground/Sources/StaticGlassBackground.swift:182: public struct StaticGlassAssetData {
+submodules/TelegramUI/Components/ChatTitleView/Tests/ChatTitleGlassPillContentWrapperTests.swift:5: final class ChatTitleGlassPillContentWrapperTests: XCTestCase {
+submodules/TelegramUI/Components/ChatTitleView/Sources/ChatTitleComponent.swift:76: private final class ChatTitleGlassPillContentWrapperView: UIView {
+submodules/TelegramUI/Components/MeshTransform/Sources/GenerateMesh.swift:71: private struct GlassMeshCacheKey: Hashable {
+submodules/TelegramUI/Components/MeshTransform/Sources/GenerateMesh.swift:93: private struct GlassMeshTemplate {
+submodules/TelegramUI/Components/NavigationBarComponent/Tests/NavigationBarGlassHoldTests.swift:5: final class NavigationBarGlassHoldTests: XCTestCase {
+submodules/TelegramUI/Components/NavigationBarComponent/Tests/GlassContextExtractableContainerTests.swift:7: final class GlassContextExtractableContainerTests: XCTestCase {
+submodules/TelegramUI/Components/NavigationBarComponent/Sources/NavigationBarGlassHold.swift:8: public final class NavigationBarGlassHold {
+submodules/TelegramUI/Components/NavigationBarComponent/Sources/NavigationBarGlassAnimation.swift:101: struct NavigationBarGlassMotion {
+submodules/TelegramUI/Components/NavigationBarComponent/Sources/NavigationBarGlassAnimation.swift:169: struct NavigationBarGlassSpring {
+submodules/TelegramUI/Components/NavigationBarComponent/Sources/NavigationBarGlassAnimation.swift:213: struct NavigationBarGlassPulse {
+
