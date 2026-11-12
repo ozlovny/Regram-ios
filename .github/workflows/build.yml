@@ -1,9 +1,6 @@
 name: Build Regram
 
 on:
-  push:
-    branches:
-      - '**'
   workflow_dispatch:
 
 permissions:
@@ -27,6 +24,9 @@ jobs:
 
       - name: Select repository build number
         run: python3 build-system/ci/versioning.py --github-env "$GITHUB_ENV"
+        
+      - name: Apply lite patches
+        run: python3 build-system/ci/lite_patch.py
 
       - name: Prepare encrypted configuration
         env:
