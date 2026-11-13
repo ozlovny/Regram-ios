@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Выписывает ключевые куски кода в reports/lite-dump.txt. Ничего не меняет."""
+"""Выписывает ключевые куски кода в reports/lite-dump.txt (v2). Ничего не меняет."""
 import os
 import re
 from pathlib import Path
@@ -36,7 +36,7 @@ def full(path, cap):
     out()
 
 
-def outline(path, cap=260):
+def outline(path, cap=220):
     lines = read(path)
     if lines is None:
         return
@@ -52,26 +52,17 @@ def outline(path, cap=260):
     out()
 
 
-def rng(path, a, b):
-    lines = read(path)
-    if lines is None:
-        return
-    out(f"## RANGE {path} {a}-{b}")
-    for i in range(a, min(b, len(lines)) + 1):
-        out(f"{i}: {lines[i - 1][:170]}")
-    out()
-
-
-def grep(regex, ctx, cap, label):
+def grep(regex, ctx, cap, label, only=None):
     rx = re.compile(regex)
     out(f"## GREP {label}")
     n = 0
-    for root, dirs, fs in os.walk("."):
-        dirs[:] = [d for d in dirs if d not in {".git", "build", "build-input", "third-party"}]
-        for f in fs:
+    for root, dirs, fs in os.walk(only or "."):
+        dirs[:] = [d for d in dirs if d not in {".git", "build", "build-input", "third-party", "Tests"}]
+        for f in sorted(fs):
             if not f.endswith((".swift", ".m", ".h", ".mm")):
                 continue
-            path = os.path.join(root, f)[2:]
+            path = os.path.join(root, f)
+            path = path[2:] if path.startswith("./") else path
             try:
                 lines = Path(path).read_text(encoding="utf-8", errors="ignore").splitlines()
             except OSError:
@@ -88,30 +79,28 @@ def grep(regex, ctx, cap, label):
     out()
 
 
-G = "submodules/TelegramUI/Components/"
-full(G + "GlassBackgroundComponent/Sources/GlassBackgroundComponent.swift", 900)
-outline(G + "GlassBackgroundComponent/Sources/LegacyGlassView.swift")
-outline(G + "StaticGlassBackground/Sources/StaticGlassBackgroundView.swift")
-outline(G + "StaticGlassBackground/Sources/StaticGlassBackground.swift")
-outline(G + "LiquidGlassShapes/Sources/LiquidGlassShapesLayer.swift")
-outline(G + "LiquidGlassShapes/Sources/LiquidGlassBackdropLayers.swift")
-outline(G + "NavigationBarComponent/Sources/NavigationBarPlatterTransitionView.swift")
-outline("submodules/TelegramCore/Sources/State/ChatHistoryPreloadManager.swift")
-outline("submodules/TelegramUI/Sources/PrefetchManager.swift")
-outline("submodules/TelegramUI/Sources/InChatPrefetchManager.swift")
-outline("submodules/MediaPlayer/Sources/TimeBasedVideoPreload.swift")
-rng("submodules/TelegramPresentationData/Sources/PresentationData.swift", 540, 600)
-grep(r"func animationDurationFactor|static var animationDurationFactor|animationDurationFactor\(\)\s*(->|\{)", 8, 30,
-     "animationDurationFactor definitions")
-
-# Собственные функции Regram
-out("## Regram/ top-level folders (name: swift files)")
-for d in sorted(Path("Regram").iterdir()) if Path("Regram").exists() else []:
-    if d.is_dir():
-        out(f"{d.name}: {len(list(d.rglob('*.swift')))}")
+# 1. Как приложение классифицирует мощность устройства
+grep(r"var isGraphicallyCapable|isGraphicallyCapable\s*:|static (var|let) performance", 10, 12, "device performance classes")
+# 2. Где создаются тяжёлые Metal-слои и «линза»
+grep(r"LiquidGlassShapesLayer\(", 3, 15, "LiquidGlassShapesLayer creation")
+grep(r"LiquidLensView\(", 3, 15, "LiquidLensView creation")
+grep(r"MetalEngine\.shared|MetalEngine\(", 2, 10, "MetalEngine")
+outline("submodules/TelegramUI/Components/LiquidLens/Sources/LiquidLensView.swift")
+# 3. Где реально используется множитель анимаций Display
+grep(r"animationDurationFactor\(\)", 1, 40, "Display animationDurationFactor use", only="submodules/Display")
+# 4. Переходы навигации
+outline("submodules/Display/Source/NavigationController.swift")
+grep(r"animated\(duration:\s*0\.[3-9]", 1, 25, "navigation durations", only="submodules/Display/Source")
+# 5. Запуск приложения
+outline("submodules/TelegramUI/Sources/AppDelegate.swift")
+grep(r"asyncAfter|Timer\.scheduledTimer|\.after\(", 2, 25, "startup delays/timers", only="submodules/TelegramUI/Sources")
+# 6. Истории и сервисы Regram
+full("build-system/check-regram-story-flags.py", 120)
+grep(r"URLSession|URLRequest\(", 1, 40, "Regram network calls", only="Regram")
+out("## Regram/RGAppUpdate files")
+for f in sorted(Path("Regram/RGAppUpdate").rglob("*.swift"))[:30] if Path("Regram/RGAppUpdate").exists() else []:
+    out(f"{len(f.read_text(errors='ignore').splitlines())}  {f}")
 out()
-full("build-system/check-regram-features.py", 120)
-outline("Regram/RGInputToolbar/Sources/RGInputToolbar.swift")
 
 OUT.write_text("\n".join(buf), encoding="utf-8")
 print(f"written {OUT}, {len(buf)} lines")
