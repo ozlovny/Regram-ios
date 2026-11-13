@@ -1,805 +1,1439 @@
-## GREP device performance classes
--- submodules/lottie-ios/Sources/Private/Utility/Debugging/TestHelpers.swift:9
-     /// Whether or not performance tests are currently running in a test target
-     static var performanceTestsAreRunning = false
-   }
+## GREP isGraphicallyCapable uses
+-- submodules/TelegramUI/Components/GlassBackgroundComponent/Sources/LegacyGlassView.swift:149
+                   case .clear:
+                       if #available(iOS 17.0, *), DeviceMetrics.performance.isGraphicallyCapable {
+                           blurFilter.setValue(2.0 as NSNumber, forKey: "inputRadius")
+-- submodules/TelegramUI/Components/GlassBackgroundComponent/Sources/LegacyGlassView.swift:198
+           
+           if #available(iOS 17.0, *), DeviceMetrics.performance.isGraphicallyCapable {
+               let size = CGSize(width: max(1.0, size.width), height: max(1.0, size.height))
+-- submodules/TelegramPresentationData/Sources/DefaultDayPresentationTheme.swift:35
+   public func dateFillNeedsBlur(theme: PresentationTheme, wallpaper: TelegramWallpaper) -> Bool {
+       if !DeviceMetrics.performance.isGraphicallyCapable {
+           return false
 -- submodules/Display/Source/DeviceMetrics.swift:10
        public struct Performance {
            public let isGraphicallyCapable: Bool
            
-           init() {
-               var length: Int = 4
-               var cpuCount: UInt32 = 0
-               sysctlbyname("hw.ncpu", &cpuCount, &length, nil, 0)
+-- submodules/Display/Source/DeviceMetrics.swift:17
                
                self.isGraphicallyCapable = cpuCount >= 4
            }
-       }
--- submodules/Display/Source/DeviceMetrics.swift:55
+
+## FULL submodules/TelegramUI/Components/LiquidLens/Sources/LiquidLensView.swift (817 lines, showing 817)
+1: import Foundation
+2: import UIKit
+3: import Display
+4: import ComponentFlow
+5: import GlassBackgroundComponent
+6: 
+7: /// The lens's resting selection, as UIKit's `_UITabSelectionView` draws it on iOS 27 (its `updateBackground` when the
+8: /// platform metrics give no selection color, as the glass tab bar's do): the backdrop captured at a quarter of the
+9: /// resolution, in a backdrop group of its own, blurred by 2 with normalized edges, then through a color matrix.
+10: private final class RestingBackgroundView: UIVisualEffectView {
+11:     var isDark: Bool?
+12: 
+13:     /// `_ColorMatrix.YCC(black:white:saturation:hue:).colorMatrix` (DesignLibrary), as `currentColorMatrixValue`
+14:     /// builds it: light YCC(-0.2, 0.93, 1.2, 0), dark YCC(-0.07, 0.8, 1.2, 0), computed by calling DesignLibrary in
+15:     /// the iOS 27 simulator.
+16:     static func colorMatrix(isDark: Bool) -> [Float32] {
+17:         if isDark {
+18:             return [1.1298, -0.2361, -0.0237, 0.0, -0.07, -0.0701, 0.964, -0.0238, 0.0, -0.07, -0.0702, -0.236, 1.1762, 0.0, -0.07, 0.0, 0.0, 0.0, 1.0, 0.0]
+19:         } else {
+20:             return [1.1851, -0.0502, -0.005, 0.0, -0.2, -0.0149, 1.1499, -0.0051, 0.0, -0.2, -0.0149, -0.05, 1.1949, 0.0, -0.2, 0.0, 0.0, 0.0, 1.0, 0.0]
+21:         }
+22:     }
+23: 
+24:     init() {
+25:         let effect = UIBlurEffect(style: .light)
+26:         super.init(effect: effect)
+27:         
+28:         for subview in self.subviews {
+29:             if subview.description.contains("VisualEffectSubview") {
+30:                 subview.isHidden = true
+31:             }
+32:         }
+33:         
+34:         self.clipsToBounds = true
+35:     }
+36:     
+37:     required init?(coder: NSCoder) {
+38:         fatalError("init(coder:) has not been implemented")
+39:     }
+40: 
+41:     func update(isDark: Bool) {
+42:         if self.isDark == isDark {
+43:             return
+44:         }
+45:         self.isDark = isDark
+46:         
+47:         if let sublayer = self.layer.sublayers?[0], let _ = sublayer.filters {
+48:             sublayer.backgroundColor = nil
+49:             sublayer.isOpaque = false
+50: 
+51:             if let blurFilter = CALayer.blur(), let colorMatrixFilter = CALayer.colorMatrix() {
+52:                 blurFilter.setValue(2.0 as NSNumber, forKey: "inputRadius")
+53:                 blurFilter.setValue(true as NSNumber, forKey: "inputNormalizeEdges")
+54:                 var matrix: [Float32] = RestingBackgroundView.colorMatrix(isDark: isDark)
+55:                 colorMatrixFilter.setValue(NSValue(bytes: &matrix, objCType: "{CAColorMatrix=ffffffffffffffffffff}"), forKey: "inputColorMatrix")
+56:                 sublayer.filters = [blurFilter, colorMatrixFilter]
+57:                 sublayer.setValue(0.25, forKey: "scale")
+58:                 sublayer.setValue("RestingBackgroundView-\(UInt(bitPattern: ObjectIdentifier(self)))", forKey: "groupName")
+59:             }
+60:         }
+61:     }
+62: }
+63: 
+64: /// `-[_UILiquidLensView _lifted]`, nil when the lens has no such method.
+65: private func lensViewIsLifted(_ lensView: UIView) -> Bool? {
+66:     let selector = NSSelectorFromString("_lifted")
+67:     guard lensView.responds(to: selector), let method = lensView.method(for: selector) else {
+68:         return nil
+69:     }
+70:     typealias ObjCMethod = @convention(c) (AnyObject, Selector) -> Bool
+71:     let function = unsafeBitCast(method, to: ObjCMethod.self)
+72:     return function(lensView, selector)
+73: }
+74: 
+75: /// The duration and curve of a move animated with `animation`, as `CALayer.animate(from:to:keyPath:duration:delay:
+76: /// curve:...)` draws it (`CALayer.makeAnimation` in Display): the part of the move done at a fraction of the duration.
+77: /// `.spring` is a real spring only at Display's two native durations and a bezier otherwise.
+78: private func lensMoveCurve(_ animation: ComponentTransition.Animation) -> (duration: Double, progress: (Double) -> CGFloat)? {
+79:     guard case let .curve(duration, curve) = animation, duration > 0.0 else {
+80:         return nil
+81:     }
+82:     switch curve {
+83:     case .spring:
+84:         var isSpringAnimation = duration == 0.5
+85:         if #available(iOS 26.0, *), abs(duration - 0.3832) <= 0.0001 {
+86:             isSpringAnimation = true
+87:         }
+88:         if isSpringAnimation {
+89:             let spring = makeSpringAnimation("position", duration: duration)
+90:             return (duration, { springAnimationValueAt(spring, CGFloat($0)) })
+91:         } else {
+92:             return (duration, { liquidLensBezierProgress(0.380, 0.700, 0.125, 1.000, $0) })
+93:         }
+94:     case .easeInOut:
+95:         return (duration, { liquidLensBezierProgress(0.42, 0.0, 0.58, 1.0, $0) })
+96:     case .easeIn:
+97:         return (duration, { liquidLensBezierProgress(0.42, 0.0, 1.0, 1.0, $0) })
+98:     case .linear:
+99:         return (duration, { CGFloat($0) })
+100:     case let .custom(c1x, c1y, c2x, c2y):
+101:         return (duration, { liquidLensBezierProgress(Double(c1x), Double(c1y), Double(c2x), Double(c2y), $0) })
+102:     case let .bounce(stiffness, damping):
+103:         let spring = makeSpringBounceAnimation("position", 0.0, damping)
+104:         spring.stiffness = stiffness
+105:         return (duration, { springAnimationValueAt(spring, CGFloat($0)) })
+106:     }
+107: }
+108: 
+109: /// Keyframes a frame apart, played from `beginTime` at the speed Display plays its animations at.
+110: private func makeLensKeyframeAnimation(keyPath: String, values: [Any], times: [Double], duration: Double, beginTime: Double, timeScale: Double) -> CAKeyframeAnimation {
+111:     let animation = CAKeyframeAnimation(keyPath: keyPath)
+112:     animation.values = values
+113:     animation.keyTimes = times.map { NSNumber(value: min(1.0, max(0.0, $0 / duration))) }
+114:     animation.calculationMode = .linear
+115:     animation.duration = duration
+116:     animation.beginTime = beginTime
+117:     animation.speed = Float(1.0 / timeScale)
+118:     animation.fillMode = .both
+119:     animation.isRemovedOnCompletion = true
+120:     if #available(iOS 15.0, *) {
+121:         let maxFps = Float(UIScreen.main.maximumFramesPerSecond)
+122:         if maxFps > 61.0 {
+123:             animation.preferredFrameRateRange = CAFrameRateRange(minimum: 30.0, maximum: maxFps, preferred: maxFps)
+124:         }
+125:     }
+126:     return animation
+127: }
+128: 
+129: public final class LiquidLensView: UIView {
+130:     public enum Kind {
+131:         case externalContainer
+132:         case builtinContainer
+133:         case noContainer
+134:     }
+135:     
+136:     private struct Params: Equatable {
+137:         var size: CGSize
+138:         var cornerRadius: CGFloat?
+139:         var selectionOrigin: CGPoint
+140:         var selectionSize: CGSize
+141:         var inset: CGFloat
+142:         var liftedInset: CGFloat
+143:         var isDark: Bool
+144:         var isLifted: Bool
+145:         var isCollapsed: Bool
+146: 
+147:         init(size: CGSize, cornerRadius: CGFloat?, selectionOrigin: CGPoint, selectionSize: CGSize, inset: CGFloat, liftedInset: CGFloat, isDark: Bool, isLifted: Bool, is
+148:             self.size = size
+149:             self.cornerRadius = cornerRadius
+150:             self.selectionOrigin = selectionOrigin
+151:             self.selectionSize = selectionSize
+152:             self.inset = inset
+153:             self.liftedInset = liftedInset
+154:             self.isLifted = isLifted
+155:             self.isDark = isDark
+156:             self.isCollapsed = isCollapsed
+157:         }
+158:     }
+159: 
+160:     private struct LensParams: Equatable {
+161:         var baseFrame: CGRect
+162:         var inset: CGFloat
+163:         var liftedInset: CGFloat
+164:         var isLifted: Bool
+165: 
+166:         init(baseFrame: CGRect, inset: CGFloat, liftedInset: CGFloat, isLifted: Bool) {
+167:             self.baseFrame = baseFrame
+168:             self.inset = inset
+169:             self.liftedInset = liftedInset
+170:             self.isLifted = isLifted
+171:         }
+172:     }
+173: 
+174:     private let containerView: UIView
+175:     private let backgroundTintColor: GlassBackgroundView.TintColor
+176:     private let backgroundContainer: GlassBackgroundContainerView?
+177:     private let genericBackgroundContainer: UIView?
+178:     private let backgroundView: GlassBackgroundView?
+179:     private var lensView: UIView?
+180:     private let liftedContainerView: UIView
+181:     public let contentView: UIView
+182:     private let restingBackgroundView: RestingBackgroundView
+183:     /// Cuts `contentView` where the lens is, so that what lies under the glass shows only as the lens's lifted content.
+184:     /// UIKit's own punch-out follows the lens layer's rect through a match-move animation, not the glass UIKit lays out
+185:     /// inside the lens; this one gets the lens's own bounds and animations, so it stays on the glass however it moves.
+186:     private let punchoutView: UIView
+187:     /// UIKit puts its punch-out next to the lens's `overridePunchoutView`: this view, in a hidden container, where it
+188:     /// cuts nothing.
+189:     private let uikitPunchoutTargetView: UIView
+190:     private let uikitPunchoutSinkView: UIView
+191:     
+192:     private var legacySelectionView: GlassBackgroundView.ContentImageView?
+193:     private var legacyContentMaskView: UIView?
+194:     private var legacyContentMaskBlobView: UIImageView?
+195:     private var legacyLiftedContentBlobMaskView: UIImageView?
+196: 
+197:     public var selectedContentView: UIView {
+198:         return self.liftedContainerView
+199:     }
+200: 
+201:     // MARK: Regram — scoped to this lens, retaining the glass and selection effects.
+202:     public var displaysShadow: Bool {
+203:         get { return self.backgroundView?.displaysShadow ?? false }
+204:         set { self.backgroundView?.displaysShadow = newValue }
+205:     }
+206:     /// `_UILiquidLensViewLargeVariantSpec` (the lens's style 1): how long a lens stays lifted at least, and the response
+207:     /// of its lift and unlift springs (damping ratio 1).
+208:     private static let lensHangTime: Double = 0.22
+209:     private static let liftSpringResponse: Double = 0.25
+210:     /// The finger's velocity is its displacement over the immediate updates of this long before the move starts; a
+211:     /// longer window than one touch event, because events arrive in bursts after the main thread stalls.
+212:     private static let immediateVelocityWindow: Double = 0.1
+213:     private static let minImmediateVelocityInterval: Double = 0.03
+214:     private static let maxCarriedSpeed: CGFloat = 3000.0
+215: 
+216:     private var params: Params?
+217:     private var appliedLensParams: LensParams?
+218: 
+219:     /// Whether the UIKit lens is lifted: after an unlift is requested it stays lifted for the rest of its hang time.
+220:     private var isLensLifted: Bool = false
+221:     private var liftTimestamp: Double = 0.0
+222:     private var unliftTimer: Foundation.Timer?
+223:     private var pendingUnliftTransition: ComponentTransition?
+224:     private var lensAnimationCount: Int = 0
+225: 
+226:     /// The lens's position and flex are worked out ahead (`LiquidLensMotionPlan`) and played as keyframe animations;
+227:     /// a change replans from where the current plan is.
+228:     private var isFlexActive: Bool = false
+229:     private var lensSegment: LiquidLensPositionSegment?
+230:     private var lensPlan: LiquidLensMotionPlan?
+231:     private var isLensMoving: Bool = false
+232:     private var lensMoveID: Int = 0
+233:     /// The lens's recent immediate positions (the finger's), newest last.
+234:     private var immediateLensPositions: [(time: Double, position: CGPoint)] = []
+235: 
+236:     public var selectionOrigin: CGPoint? {
+237:         return self.params?.selectionOrigin
+238:     }
+239: 
+240:     public var selectionSize: CGSize? {
+241:         return self.params?.selectionSize
+242:     }
+243:     
+244:     public private(set) var isAnimating: Bool = false {
+245:         didSet {
+246:             if self.isAnimating != oldValue {
+247:                 self.onUpdatedIsAnimating?(self.isAnimating)
+248:             }
+249:         }
+250:     }
+251:     public var onUpdatedIsAnimating: ((Bool) -> Void)?
+252:     public var isLiftedAnimationCompleted: (() -> Void)?
+253: 
+254:     /// `backgroundTintColor` tints the glass behind the items, when the kind has one.
+255:     public init(kind: Kind, backgroundTintColor: GlassBackgroundView.TintColor = GlassBackgroundView.TintColor(kind: .panel)) {
+256:         self.containerView = UIView()
+257:         self.backgroundTintColor = backgroundTintColor
+258: 
+259:         switch kind {
+260:         case .builtinContainer:
+261:             self.backgroundContainer = GlassBackgroundContainerView()
+262:             self.genericBackgroundContainer = nil
+263:         case .externalContainer, .noContainer:
+264:             self.backgroundContainer = nil
+265:             self.genericBackgroundContainer = UIView()
+266:         }
+267:         
+268:         if case .noContainer = kind {
+269:             self.backgroundView = nil
+270:         } else {
+271:             self.backgroundView = GlassBackgroundView()
+272:         }
+273:         
+274:         self.contentView = UIView()
+275:         self.liftedContainerView = UIView()
+276: 
+277:         self.restingBackgroundView = RestingBackgroundView()
+278:         
+279:         self.punchoutView = UIView()
+280:         self.uikitPunchoutTargetView = UIView()
+281:         self.uikitPunchoutSinkView = UIView()
+282: 
+283:         super.init(frame: CGRect())
+284:         
+285:         if let backgroundContainer = self.backgroundContainer {
+286:             self.addSubview(backgroundContainer)
+287:             if let backgroundView = self.backgroundView {
+288:                 backgroundContainer.contentView.addSubview(backgroundView)
+289:                 backgroundView.contentView.addSubview(self.containerView)
+290:             }
+291:         } else if let genericBackgroundContainer = self.genericBackgroundContainer {
+292:             self.addSubview(genericBackgroundContainer)
+293:             if let backgroundView = self.backgroundView {
+294:                 genericBackgroundContainer.addSubview(backgroundView)
+295:                 backgroundView.contentView.addSubview(self.containerView)
+296:             } else {
+297:                 genericBackgroundContainer.addSubview(self.containerView)
+298:             }
+299:         }
+300:         self.containerView.isUserInteractionEnabled = false
+301:         
+302:         if #available(iOS 26.0, *) {
+303:             if let viewClass = NSClassFromString("_UILiquidLensView") as AnyObject as? NSObjectProtocol {
+304:                 let allocSelector = NSSelectorFromString("alloc")
+305:                 let initSelector = NSSelectorFromString("initWithRestingBackground:")
+306:                 let objcAlloc = viewClass.perform(allocSelector).takeUnretainedValue()
+307:                 let instance = objcAlloc.perform(initSelector, with: UIView()).takeUnretainedValue()
+308:                 self.lensView = instance as? UIView
+309:             }
+310:         }
+311:         
+312:         if let lensView = self.lensView {
+313:             if let backgroundContainer = self.backgroundContainer {
+314:                 backgroundContainer.layer.zPosition = 1
+315:             } else if let genericBackgroundContainer = self.genericBackgroundContainer{
+316:                 genericBackgroundContainer.layer.zPosition = 1
+317:             }
+318:             lensView.layer.zPosition = 10.0
+319:             
+320:             self.liftedContainerView.addSubview(self.restingBackgroundView)
+321:             
+322:             self.punchoutView.isUserInteractionEnabled = false
+323:             self.punchoutView.backgroundColor = .black
+324:             self.punchoutView.layer.compositingFilter = "destOut"
+325:             
+326:             self.uikitPunchoutSinkView.isHidden = true
+327:             self.uikitPunchoutSinkView.isUserInteractionEnabled = false
+328:             self.uikitPunchoutSinkView.addSubview(self.uikitPunchoutTargetView)
+329:             
+330:             self.containerView.addSubview(self.liftedContainerView)
+331:             self.containerView.addSubview(lensView)
+332:             self.containerView.addSubview(self.contentView)
+333:             self.containerView.addSubview(self.punchoutView)
+334:             self.containerView.addSubview(self.uikitPunchoutSinkView)
+335:             
+336:             if let backgroundContainer = self.backgroundContainer {
+337:                 lensView.perform(NSSelectorFromString("setLiftedContainerView:"), with: backgroundContainer.contentView)
+338:             } else if let genericBackgroundContainer = self.genericBackgroundContainer {
+339:                 lensView.perform(NSSelectorFromString("setLiftedContainerView:"), with: genericBackgroundContainer)
+340:             }
+341:             lensView.perform(NSSelectorFromString("setLiftedContentView:"), with: self.liftedContainerView)
+342:             lensView.perform(NSSelectorFromString("setOverridePunchoutView:"), with: self.uikitPunchoutTargetView)
+343:             
+344:             do {
+345:                 let selector = NSSelectorFromString("setLiftedContentMode:")
+346:                 if let method = lensView.method(for: selector) {
+347:                     typealias ObjCMethod = @convention(c) (AnyObject, Selector, Int32) -> Void
+348:                     let function = unsafeBitCast(method, to: ObjCMethod.self)
+349:                     function(lensView, selector, 1)
+350:                 }
+351:             }
+352:             
+353:             do {
+354:                 let selector = NSSelectorFromString("setStyle:")
+355:                 if let method = lensView.method(for: selector) {
+356:                     typealias ObjCMethod = @convention(c) (AnyObject, Selector, Int32) -> Void
+357:                     let function = unsafeBitCast(method, to: ObjCMethod.self)
+358:                     function(lensView, selector, 1)
+359:                 }
+360:             }
+361:             
+362:             do {
+363:                 let selector = NSSelectorFromString("setWarpsContentBelow:")
+364:                 if let method = lensView.method(for: selector) {
+365:                     typealias ObjCMethod = @convention(c) (AnyObject, Selector, Bool) -> Void
+366:                     let function = unsafeBitCast(method, to: ObjCMethod.self)
+367:                     function(lensView, selector, true)
+368:                 }
+369:             }
+370: 
+371:             // The lens's flex is `LiquidLensFlex`, planned with its position. UIKit's, which guesses the lens's motion by
+372:             // sampling it, stays attached (the lens activates and deactivates it as it lifts) with nothing to flex from.
+373:             if lensView.responds(to: NSSelectorFromString("flexInteraction")), let flexInteraction = lensView.value(forKey: "flexInteraction") as? NSObject, flexInteracti
+374:                 flexInteraction.setValue(0 as NSNumber, forKey: "preferredFlexSources")
+375:             }
+376:         } else {
+377:             let legacySelectionView = GlassBackgroundView.ContentImageView()
+378:             self.legacySelectionView = legacySelectionView
+379:             if let backgroundView = self.backgroundView {
+380:                 backgroundView.contentView.insertSubview(legacySelectionView, at: 0)
+381:             } else {
+382:                 self.containerView.insertSubview(legacySelectionView, at: 0)
+383:             }
+384:             
+385:             let legacyContentMaskView = UIView()
+386:             legacyContentMaskView.backgroundColor = .white
+387:             self.legacyContentMaskView = legacyContentMaskView
+388:             self.contentView.mask = legacyContentMaskView
+389:             
+390:             if let filter = CALayer.luminanceToAlpha() {
+391:                 legacyContentMaskView.layer.filters = [filter]
+392:             }
+393:             
+394:             let legacyContentMaskBlobView = UIImageView()
+395:             self.legacyContentMaskBlobView = legacyContentMaskBlobView
+396:             legacyContentMaskView.addSubview(legacyContentMaskBlobView)
+397:             
+398:             self.containerView.addSubview(self.contentView)
+399:             
+400:             let legacyLiftedContentBlobMaskView = UIImageView()
+401:             self.legacyLiftedContentBlobMaskView = legacyLiftedContentBlobMaskView
+402:             self.liftedContainerView.mask = legacyLiftedContentBlobMaskView
+403:             
+404:             self.containerView.addSubview(self.liftedContainerView)
+405:         }
+406:     }
+407: 
+408:     required init?(coder: NSCoder) {
+409:         fatalError("init(coder:) has not been implemented")
+410:     }
+411: 
+412:     deinit {
+413:         self.unliftTimer?.invalidate()
+414:     }
+415: 
+416:     public func setLiftedContainer(view: UIView) {
+417:         guard let lensView = self.lensView else {
+418:             return
+419:         }
+420:         lensView.perform(NSSelectorFromString("setLiftedContainerView:"), with: view)
+421:     }
+422: 
+423:     public func update(size: CGSize, cornerRadius: CGFloat? = nil, selectionOrigin: CGPoint, selectionSize: CGSize, inset: CGFloat, liftedInset: CGFloat = 4.0, isDark: Bo
+424:         let params = Params(size: size, cornerRadius: cornerRadius, selectionOrigin: selectionOrigin, selectionSize: selectionSize, inset: inset, liftedInset: liftedInset
+425:         if self.params == params {
+426:             return
+427:         }
+428:         self.update(params: params, transition: transition)
+429:     }
+430: 
+431:     private func update(transition: ComponentTransition) {
+432:         guard let params = self.params else {
+433:             return
+434:         }
+435:         self.update(params: params, transition: transition)
+436:     }
+437: 
+438:     private func lensBounds(params: LensParams, isLifted: Bool) -> CGRect {
+439:         let inset: CGFloat = isLifted ? params.liftedInset : (-params.inset)
+440:         return CGRect(origin: CGPoint(), size: CGSize(width: params.baseFrame.width + inset * 2.0, height: params.baseFrame.height + inset * 2.0))
+441:     }
+442: 
+443:     /// The lens's size, and the punch-out's with it: inside a view animation, both animate along with the glass that
+444:     /// UIKit lays out inside the lens.
+445:     private func setLensBounds(_ bounds: CGRect) {
+446:         guard let lensView = self.lensView else {
+447:             return
+448:         }
+449:         lensView.bounds = bounds
+450:         self.punchoutView.bounds = bounds
+451:         self.punchoutView.layer.cornerRadius = min(bounds.width, bounds.height) * 0.5
+452:     }
+453: 
+454:     private func updateLens(params: LensParams, transition: ComponentTransition) {
+455:         guard self.lensView != nil else {
+456:             return
+457:         }
+458:         self.appliedLensParams = params
+459: 
+460:         if params.isLifted {
+461:             self.cancelPendingUnlift()
+462:             if !self.isLensLifted {
+463:                 self.setLensLifted(true, params: params, transition: transition)
+464:                 return
+465:             }
+466:         } else if self.isLensLifted {
+467:             // UIKit keeps a lens lifted for at least its hang time, so that a tap shows the lift. It is timed here
+468:             // instead of by UIKit's own unlift timer, which would also hold back the lens's frame until it fires.
+469:             let remainingHangTime = self.liftTimestamp + LiquidLensView.lensHangTime * UIView.animationDurationFactor() - CACurrentMediaTime()
+470:             if !transition.animation.isImmediate && remainingHangTime > 0.0 {
+471:                 self.scheduleUnlift(after: remainingHangTime, transition: transition)
+472:             } else {
+473:                 self.cancelPendingUnlift()
+474:                 self.setLensLifted(false, params: params, transition: transition)
+475:                 return
+476:             }
+477:         }
+478:         self.moveLens(params: params, transition: transition)
+479:     }
+480: 
+481:     /// UIKit animates the lens's material into and out of the lifted state; its size and position are animated here,
+482:     /// with UIKit's lift spring for the size. UIKit's `alongsideAnimations` would run them inside its own spring, or,
+483:     /// for an unlift within the hang time, only once its timer fires.
+484:     private func setLensLifted(_ isLifted: Bool, params: LensParams, transition: ComponentTransition) {
+485:         guard let lensView = self.lensView else {
+486:             return
+487:         }
+488:         let animated = !transition.animation.isImmediate
+489:         self.isLensLifted = isLifted
+490:         var resetsMotion = false
+491:         if isLifted {
+492:             self.liftTimestamp = CACurrentMediaTime()
+493:             if !self.isFlexActive {
+494:                 self.isFlexActive = true
+495:                 resetsMotion = true
+496:             }
+497:         }
+498: 
+499:         self.beginLensAnimation()
+500:         let completion: () -> Void = { [weak self] in
+501:             guard let self else {
+502:                 return
+503:             }
+504:             // UIKit deactivates the lens's flex when the unlift completes.
+505:             if !self.isLensLifted {
+506:                 self.setFlexActive(false)
+507:             }
+508:             self.endLensAnimation()
+509:             self.isLiftedAnimationCompleted?()
+510:         }
+511:         let selector = NSSelectorFromString("setLifted:animated:alongsideAnimations:completion:")
+512:         if lensViewIsLifted(lensView) != isLifted, let method = lensView.method(for: selector) {
+513:             typealias ObjCMethod = @convention(c) (AnyObject, Selector, Bool, Bool, (@convention(block) () -> Void)?, (@convention(block) () -> Void)?) -> Void
+514:             let function = unsafeBitCast(method, to: ObjCMethod.self)
+515:             function(lensView, selector, isLifted, animated, nil, completion)
+516:         } else {
+517:             // Already in that state (UIKit unlifts a lens that leaves its window); UIKit would not call the completion.
+518:             completion()
+519:         }
+520: 
+521:         let lensBounds = self.lensBounds(params: params, isLifted: isLifted)
+522:         if animated {
+523:             // Inside a view animation the lens lays its glass out along with its bounds.
+524:             if #available(iOS 17.0, *) {
+525:                 UIView.animate(springDuration: LiquidLensView.liftSpringResponse, bounce: 0.0, initialSpringVelocity: 0.0, delay: 0.0, options: [.allowUserInteraction, .b
+526:                     self.setLensBounds(lensBounds)
+527:                 })
+528:             } else {
+529:                 UIView.animate(withDuration: LiquidLensView.liftSpringResponse, delay: 0.0, usingSpringWithDamping: 1.0, initialSpringVelocity: 0.0, options: [.allowUserI
+530:                     self.setLensBounds(lensBounds)
+531:                 })
+532:             }
+533:         } else {
+534:             self.setLensBounds(lensBounds)
+535:         }
+536:         let resetsFlex = !animated && !isLifted
+537:         if resetsFlex {
+538:             self.isFlexActive = false
+539:         }
+540:         // The flex depends on the lens's size, so it is planned again also when the lens stays where it is.
+541:         self.setLensPosition(CGPoint(x: params.baseFrame.midX, y: params.baseFrame.midY), transition: transition, replans: true, resetsMotion: resetsMotion, resetsFlex: r
+542:         self.updateRestingBackgroundAlpha(transition: transition)
+543:     }
+544: 
+545:     private func scheduleUnlift(after delay: Double, transition: ComponentTransition) {
+546:         self.pendingUnliftTransition = transition
+547:         if self.unliftTimer != nil {
+548:             return
+549:         }
+550:         // A frame later than the hang time, so that UIKit, which measures it from its own lift timestamp, unlifts at once.
+551:         let timer = Foundation.Timer(timeInterval: delay + 1.0 / 120.0, repeats: false, block: { [weak self] _ in
+552:             guard let self else {
+553:                 return
+554:             }
+555:             self.unliftTimer = nil
+556:             let transition = self.pendingUnliftTransition ?? .spring(duration: 0.4)
+557:             self.pendingUnliftTransition = nil
+558:             guard let params = self.appliedLensParams, !params.isLifted, self.isLensLifted else {
+559:                 return
+560:             }
+561:             self.setLensLifted(false, params: params, transition: transition)
+562:         })
+563:         RunLoop.main.add(timer, forMode: .common)
+564:         self.unliftTimer = timer
+565:     }
+566: 
+567:     private func cancelPendingUnlift() {
+568:         self.unliftTimer?.invalidate()
+569:         self.unliftTimer = nil
+570:         self.pendingUnliftTransition = nil
+571:     }
+572: 
+573:     private func moveLens(params: LensParams, transition: ComponentTransition) {
+574:         guard let lensView = self.lensView else {
+575:             return
+576:         }
+577:         let lensBounds = self.lensBounds(params: params, isLifted: self.isLensLifted)
+578:         let lensCenter = CGPoint(x: params.baseFrame.midX, y: params.baseFrame.midY)
+579: 
+580:         let previousBounds: CGRect = lensView.bounds
+581:         if previousBounds != lensBounds {
+582:             // The lens lays its glass out inside this animation, so the lens, its glass and the punch-out change size
+583:             // together, centred on the lens's path. Snapping the lens's bounds instead left the glass growing from the
+584:             // lens's left edge, off the path, while the punch-out took the new size at once.
+585:             transition.animateView {
+586:                 self.setLensBounds(lensBounds)
+587:             }
+588:         }
+589:         self.setLensPosition(lensCenter, transition: transition, replans: previousBounds != lensBounds)
+590:     }
+591: 
+592:     private func beginLensAnimation() {
+593:         self.lensAnimationCount += 1
+594:         self.isAnimating = true
+595:     }
+596: 
+597:     private func endLensAnimation() {
+598:         self.lensAnimationCount = max(0, self.lensAnimationCount - 1)
+599:         if self.lensAnimationCount == 0 {
+600:             self.isAnimating = false
+601:         }
+602:     }
+603: 
+604:     /// A move counts as one lens animation, from its start until its segment ends or another replaces it.
+605:     private func updateIsLensMoving(segment: LiquidLensPositionSegment, now: Double) {
+606:         self.lensMoveID += 1
+607:         if self.isLensMoving {
+608:             self.isLensMoving = false
+609:             self.endLensAnimation()
+610:         }
+611:         if segment.endTime > now {
+612:             self.isLensMoving = true
+613:             self.beginLensAnimation()
+614:             let moveID = self.lensMoveID
+615:             DispatchQueue.main.asyncAfter(deadline: .now() + (segment.endTime - now) * self.lensTimeScale(), execute: { [weak self] in
+616:                 guard let self, self.lensMoveID == moveID, self.isLensMoving else {
+617:                     return
+618:                 }
+619:                 self.isLensMoving = false
+620:                 self.endLensAnimation()
+621:             })
+622:         }
+623:     }
+624: 
+625:     /// The lens flexes from lift until its unlift completes, and then settles back.
+626:     private func setFlexActive(_ isActive: Bool) {
+627:         if self.isFlexActive == isActive {
+628:             return
+629:         }
+630:         self.isFlexActive = isActive
+631:         self.replanLens(now: self.lensTime(), resetsMotion: isActive)
+632:     }
+633: 
+634:     /// Animation time scaled the way Display scales its animations' durations (slow animations in the simulator), in
+635:     /// which the plans are made; Core Animation plays them at `1 / lensTimeScale()`.
+636:     private func lensTimeScale() -> Double {
+637:         return max(0.01, UIView.animationDurationFactor())
+638:     }
+639: 
+640:     private func lensTime() -> Double {
+641:         return CACurrentMediaTime() / self.lensTimeScale()
+642:     }
+643: 
+644:     /// Moves the lens's glass to `center` from where it is now, along `transition`'s curve as `CALayer.animate` draws
+645:     /// it, so that it stays in step with content animated with the same transition, and plans the flex of that move.
+646:     /// An interrupted move continues from its current position (as a Core Animation `from: presentation` animation
+647:     /// does) and the flex from its current state.
+648:     private func setLensPosition(_ center: CGPoint, transition: ComponentTransition, replans: Bool, resetsMotion: Bool = false, resetsFlex: Bool = false) {
+649:         guard let lensView = self.lensView else {
+650:             return
+651:         }
+652:         let now = self.lensTime()
+653:         var movesLens = false
+654:         if self.lensSegment?.to != center {
+655:             let current = self.lensSegment?.position(at: now) ?? lensView.center
+656:             let segment: LiquidLensPositionSegment
+657:             if let curve = lensMoveCurve(transition.animation), current != center {
+658:                 segment = LiquidLensPositionSegment(from: current, to: center, startTime: now, duration: curve.duration, progress: curve.progress, initialVelocity: self.l
+659:                 self.immediateLensPositions.removeAll()
+660:             } else {
+661:                 segment = .resting(at: center, time: now)
+662:                 self.immediateLensPositions.append((now, center))
+663:                 self.immediateLensPositions.removeAll(where: { now - $0.time > LiquidLensView.immediateVelocityWindow })
+664:             }
+665:             self.lensSegment = segment
+666:             UIView.performWithoutAnimation {
+667:                 lensView.center = center
+668:                 self.punchoutView.center = center
+669:             }
+670:             movesLens = true
+671:             self.updateIsLensMoving(segment: segment, now: now)
+672:         }
+673:         if movesLens || replans {
+674:             self.replanLens(now: now, resetsMotion: resetsMotion, resetsFlex: resetsFlex)
+675:         }
+676:     }
+677: 
+678:     /// How fast the lens moves at `time`: along its current move, or, right after it followed the finger (immediate
+679:     /// updates), as fast as the finger moved it. A new move starts with this velocity.
+680:     private func lensVelocity(at time: Double) -> CGPoint {
+681:         var velocity = CGPoint()
+682:         if let segment = self.lensSegment, time < segment.endTime {
+683:             velocity = segment.velocity(at: time)
+684:         } else {
+685:             let recent = self.immediateLensPositions.filter { time - $0.time <= LiquidLensView.immediateVelocityWindow }
+686:             if let first = recent.first, let last = recent.last, time - last.time <= LiquidLensView.immediateVelocityWindow * 0.5 {
+687:                 // Over at least a few frames, so that a lone jump (a relayout) or a burst of events is not a speed.
+688:                 let interval = max(last.time - first.time, LiquidLensView.minImmediateVelocityInterval)
+689:                 if recent.count > 1 {
+690:                     velocity = CGPoint(x: (last.position.x - first.position.x) / CGFloat(interval), y: (last.position.y - first.position.y) / CGFloat(interval))
+691:                 }
+692:             }
+693:         }
+694:         let speed = sqrt(velocity.x * velocity.x + velocity.y * velocity.y)
+695:         if speed > LiquidLensView.maxCarriedSpeed {
+696:             velocity = CGPoint(x: velocity.x * LiquidLensView.maxCarriedSpeed / speed, y: velocity.y * LiquidLensView.maxCarriedSpeed / speed)
+697:         }
+698:         return velocity
+699:     }
+700: 
+701:     private func replanLens(now: Double, resetsMotion: Bool = false, resetsFlex: Bool = false) {
+702:         guard let lensView = self.lensView else {
+703:             return
+704:         }
+705:         let segment = self.lensSegment ?? .resting(at: lensView.center, time: now)
+706:         var start = self.lensPlan?.state(at: now) ?? LiquidLensMotionState(time: now)
+707:         start.time = now
+708:         if resetsMotion {
+709:             start.motion = LiquidLensMotion()
+710:         }
+711:         if resetsFlex {
+712:             start.animator.reset()
+713:         }
+714:         let plan = LiquidLensMotionPlan(start: start, segment: segment, isFlexActive: self.isFlexActive, size: lensView.bounds.size)
+715:         self.lensPlan = plan
+716: 
+717:         let timeScale = self.lensTimeScale()
+718:         let positionKeyframes = plan.positionKeyframes
+719:         // The punch-out moves and flexes with the lens.
+720:         for layer in [lensView.layer, self.punchoutView.layer] {
+721:             let beginTime = layer.convertTime(plan.startTime * timeScale, from: nil)
+722: 
+723:             if positionKeyframes.count > 1, let duration = positionKeyframes.last?.time, duration > 0.0 {
+724:                 let animation = makeLensKeyframeAnimation(keyPath: "position", values: positionKeyframes.map { NSValue(cgPoint: $0.position) }, times: positionKeyframes.m
+725:                 layer.add(animation, forKey: "liquidLensPosition")
+726:             } else {
+727:                 layer.removeAnimation(forKey: "liquidLensPosition")
+728:             }
+729: 
+730:             if plan.hasFlex, plan.endTime > plan.startTime {
+731:                 let animation = makeLensKeyframeAnimation(keyPath: "transform", values: plan.states.map { NSValue(caTransform3D: $0.animator.flex.transform) }, times: pla
+732:                 layer.add(animation, forKey: "liquidLensFlex")
+733:             } else {
+734:                 layer.removeAnimation(forKey: "liquidLensFlex")
+735:             }
+736:         }
+737:     }
+738: 
+739:     private func update(params: Params, transition: ComponentTransition) {
+740:         let isFirstTime = self.params == nil
+741:         let transition: ComponentTransition = isFirstTime ? .immediate : transition
+742: 
+743:         self.params = params
+744: 
+745:         transition.setFrame(view: self.containerView, frame: CGRect(origin: CGPoint(), size: params.size))
+746: 
+747:         if let backgroundContainer = self.backgroundContainer {
+748:             transition.setFrame(view: backgroundContainer, frame: CGRect(origin: CGPoint(), size: params.size))
+749:             backgroundContainer.update(size: params.size, isDark: params.isDark, transition: transition)
+750:         } else if let genericBackgroundContainer = self.genericBackgroundContainer {
+751:             transition.setFrame(view: genericBackgroundContainer, frame: CGRect(origin: CGPoint(), size: params.size))
+752:         }
+753:         
+754:         if let backgroundView = self.backgroundView {
+755:             transition.setFrame(view: backgroundView, frame: CGRect(origin: CGPoint(), size: params.size))
+756:             backgroundView.update(size: params.size, cornerRadius: params.cornerRadius ?? (params.size.height * 0.5), isDark: params.isDark, tintColor: self.backgroundTin
+757:         }
+758:         
+759:         if self.contentView.bounds.size != params.size {
+760:             self.contentView.clipsToBounds = true
+761:             transition.setFrame(view: self.contentView, frame: CGRect(origin: CGPoint(), size: params.size), completion: { [weak self] completed in
+762:                 guard let self, completed else {
+763:                     return
+764:                 }
+765:                 self.contentView.clipsToBounds = false
+766:             })
+767:             transition.setCornerRadius(layer: self.contentView.layer, cornerRadius: params.cornerRadius ?? (params.size.height * 0.5))
+768: 
+769:             self.liftedContainerView.clipsToBounds = true
+770:             transition.setFrame(view: self.liftedContainerView, frame: CGRect(origin: CGPoint(), size: params.size), completion: { [weak self] completed in
+771:                 guard let self, completed else {
+772:                     return
+773:                 }
+774:                 self.liftedContainerView.clipsToBounds = false
+775:             })
+776:             transition.setCornerRadius(layer: self.liftedContainerView.layer, cornerRadius: params.cornerRadius ?? (params.size.height * 0.5))
+777:         }
+778: 
+779:         
+780:         let baseLensFrame = CGRect(origin: params.selectionOrigin, size: params.selectionSize)
+781:         self.updateLens(params: LensParams(baseFrame: baseLensFrame, inset: params.inset, liftedInset: params.liftedInset, isLifted: params.isLifted), transition: transit
+782:         
+783:         if let legacyContentMaskView = self.legacyContentMaskView {
+784:             transition.setFrame(view: legacyContentMaskView, frame: CGRect(origin: CGPoint(), size: params.size))
+785:         }
+786:         if let legacyContentMaskBlobView = self.legacyContentMaskBlobView, let legacyLiftedContentBlobMaskView = self.legacyLiftedContentBlobMaskView, let legacySelection
+787:             let lensFrame = baseLensFrame.insetBy(dx: params.inset, dy: params.inset)
+788:             let effectiveLensFrame = lensFrame.insetBy(dx: params.isLifted ? -2.0 : 0.0, dy: params.isLifted ? -2.0 : 0.0)
+789:             
+790:             if legacyContentMaskBlobView.image?.size.height != lensFrame.height {
+791:                 legacyContentMaskBlobView.image = generateStretchableFilledCircleImage(diameter: lensFrame.height, color: .black)
+792:                 legacyLiftedContentBlobMaskView.image = legacyContentMaskBlobView.image
+793:                 legacySelectionView.image = generateStretchableFilledCircleImage(diameter: lensFrame.height, color: .white)?.withRenderingMode(.alwaysTemplate)
+794:             }
+795:             transition.setFrame(view: legacyContentMaskBlobView, frame: effectiveLensFrame)
+796:             transition.setFrame(view: legacyLiftedContentBlobMaskView, frame: effectiveLensFrame)
+797:             
+798:             legacySelectionView.tintColor = UIColor(white: params.isDark ? 1.0 : 0.0, alpha: params.isDark ? 0.1 : 0.075)
+799:             transition.setFrame(view: legacySelectionView, frame: effectiveLensFrame)
+800:             transition.setAlpha(view: legacySelectionView, alpha: params.isCollapsed ? 0.0 : 1.0)
+801:         }
+802: 
+803:         transition.setFrame(view: self.restingBackgroundView, frame: CGRect(origin: CGPoint(), size: params.size))
+804:         self.restingBackgroundView.update(isDark: params.isDark)
+805:         self.updateRestingBackgroundAlpha(transition: transition)
+806:     }
+807: 
+808:     /// The resting selection shows while the lens rests: hidden while it is lifted, which on iOS 26 and later lasts
+809:     /// until the lens actually unlifts, after its hang time.
+810:     private func updateRestingBackgroundAlpha(transition: ComponentTransition) {
+811:         guard let params = self.params else {
+812:             return
+813:         }
+814:         let isLifted = self.lensView != nil ? self.isLensLifted : params.isLifted
+815:         transition.setAlpha(view: self.restingBackgroundView, alpha: (isLifted || params.isCollapsed) ? 0.0 : 1.0)
+816:     }
+817: }
+
+## GREP TabBar glass/lens
+-- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:7
+   import ComponentDisplayAdapters
+   import GlassBackgroundComponent
+   import MultilineTextComponent
+-- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:69
+   
+       private let backgroundView: GlassBackgroundView
+       private let iconView: UIImageView
+-- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:73
        
-       public static let performance = Performance()
+       private var close: (background: GlassBackgroundView, icon: UIImageView)?
    
-       private static let currentModelIdentifier: String? = {
-           #if targetEnvironment(simulator)
-           return ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"]
-           #else
-           var systemInfo = utsname()
-           guard uname(&systemInfo) == 0 else {
-               return nil
-           }
-
-## GREP LiquidGlassShapesLayer creation
--- submodules/TelegramCallsUI/Sources/CallStatusBarWavesLayer.swift:160
-       init(colors: (UIColor, UIColor)) {
-           self.shapesLayer = LiquidGlassShapesLayer(colors: colors)
-           self.waves = CallStatusBarWavesLayer.waveMotions.map(Wave.init(motion:))
+-- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:81
    
--- submodules/TelegramUI/Components/ChatTextInputMediaRecordingButton/Sources/ChatRecordingBlobView.swift:49
-       override init(frame: CGRect) {
-           self.shapesLayer = LiquidGlassShapesLayer(colors: (.white, .white))
-           self.outerBlob = ChatRecordingBlobMotion(parameters: ChatRecordingBlobAppearance.waveMotion)
-           self.middleBlob = ChatRecordingBlobMotion(parameters: ChatRecordingBlobAppearance.waveMotion)
-
-## GREP LiquidLensView creation
--- submodules/DrawingUI/Sources/ModeAndSizeComponent.swift:309
-               } else {
-                   liquidLensView = LiquidLensView(kind: isTablet ? .noContainer : .externalContainer)
-                   self.liquidLensView = liquidLensView
-                   self.backgroundContainer.contentView.addSubview(liquidLensView)
--- submodules/TelegramUI/Components/EntityKeyboard/Sources/EntityKeyboardBottomPanelComponent.swift:182
+           self.backgroundView = GlassBackgroundView()
+           self.backgroundView.contentView.clipsToBounds = true
+-- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:242
+               
+               let close: (background: GlassBackgroundView, icon: UIImageView)
+               var closeTransition = transition
+-- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:248
+                   closeTransition = closeTransition.withAnimation(.none)
+                   close = (GlassBackgroundView(), UIImageView())
+                   self.close = close
+-- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:569
+       public final class View: UIView, UIGestureRecognizerDelegate {
+           private let backgroundContainer: GlassBackgroundContainerView
+           private let liquidLensView: LiquidLensView
+-- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:570
+           private let backgroundContainer: GlassBackgroundContainerView
+           private let liquidLensView: LiquidLensView
+           private let contextGestureContainerView: ContextControllerSourceView
+-- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:596
+           public override init(frame: CGRect) {
                self.backgroundContainer = GlassBackgroundContainerView()
-               self.liquidLensView = LiquidLensView(kind: .externalContainer)
-                                       
-               super.init(frame: frame)
+               self.liquidLensView = LiquidLensView(kind: .externalContainer, backgroundTintColor: GlassBackgroundView.TintColor(kind: .untinted))
 -- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:597
                self.backgroundContainer = GlassBackgroundContainerView()
                self.liquidLensView = LiquidLensView(kind: .externalContainer, backgroundTintColor: GlassBackgroundView.TintColor(kind: .untinted))
                self.liquidLensView.displaysShadow = false // MARK: Regram
+-- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:598
+               self.liquidLensView = LiquidLensView(kind: .externalContainer, backgroundTintColor: GlassBackgroundView.TintColor(kind: .untinted))
+               self.liquidLensView.displaysShadow = false // MARK: Regram
                
--- submodules/TelegramUI/Components/HorizontalTabsComponent/Sources/HorizontalTabsComponent.swift:436
-           override init(frame: CGRect) {
-               self.lensView = LiquidLensView(kind: .noContainer)
-               self.scrollView = ScrollView()
+-- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:618
                
--- submodules/TelegramUI/Components/CameraScreen/Sources/ModeComponent.swift:376
-               } else {
-                   liquidLensView = LiquidLensView(kind: isTablet ? .noContainer : .externalContainer)
-                   self.liquidLensView = liquidLensView
-                   self.backgroundContainer.contentView.addSubview(liquidLensView)
--- submodules/AttachmentUI/Sources/AttachmentPanel.swift:2695
+               self.contextGestureContainerView.addSubview(self.liquidLensView)
+               let tabSelectionRecognizer = TabSelectionRecognizer(target: self, action: #selector(self.onTabSelectionGesture(_:)))
+-- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:1033
    
-                   liquidLensView = LiquidLensView(kind: .noContainer)
-                   liquidLensView.clipsToBounds = true
-                   liquidLensView.layer.cornerRadius = 28.0
-
-## GREP MetalEngine
--- submodules/MetalEngine/Sources/MetalEngine.swift:185
-       deinit {
-           MetalEngine.shared.impl.removeLayerSurfaceAllocation(layer: self)
-       }
--- submodules/MetalEngine/Sources/MetalEngine.swift:197
-           assert(Thread.isMainThread)
-           MetalEngine.shared.impl.removeLayerSurfaceAllocation(layer: self)
-           self.surfaceAllocation = nil
--- submodules/MetalEngine/Sources/MetalEngine.swift:509
-       func setNeedsUpdate() {
-           MetalEngine.shared.impl.addSubjectNeedsUpdate(subject: self)
-       }
--- submodules/MetalEngine/Sources/MetalEngine.swift:1246
-       
-       public static let shared = MetalEngine()
-       
--- submodules/TelegramCallsUI/Sources/CallControllerNodeV2.swift:1007
-           
-           CVMetalTextureCacheCreate(nil, nil, MetalEngine.shared.device, nil, &self.textureCache)
-           
--- submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesLayer.swift:157
-           self.contentLayer = MetalEngineSubjectLayer()
-           self.crestBuffer = MetalEngine.shared.pooledBuffer(spec: BufferSpec(length: 3 * LiquidGlassShapesConstants.crestSampleCount * MemoryLayout<Flo
-           self.radialBuffer = MetalEngine.shared.pooledBuffer(spec: BufferSpec(length: 3 * LiquidGlassShapesConstants.radialSampleCount * MemoryLayout<F
--- submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesLayer.swift:158
-           self.crestBuffer = MetalEngine.shared.pooledBuffer(spec: BufferSpec(length: 3 * LiquidGlassShapesConstants.crestSampleCount * MemoryLayout<Flo
-           self.radialBuffer = MetalEngine.shared.pooledBuffer(spec: BufferSpec(length: 3 * LiquidGlassShapesConstants.radialSampleCount * MemoryLayout<F
-           self.colors = (colorVector(colors.0), colorVector(colors.1))
--- submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesLayer.swift:329
-           // Without samples the passes would clear their layers and draw nothing; skip the frame and keep the last one.
-           guard LiquidGlassShapesPipelines.shared.computePipelineState(device: MetalEngine.shared.device, functionName: Kind.kernelFunctionName) != nil,
-               return
--- submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesPipelines.swift:153
-           descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-           guard let pipelineState = MetalEngine.shared.pipelineCache.makeRenderPipelineState(descriptor: descriptor) else {
-               return nil
--- submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesPipelines.swift:177
-           descriptor.computeFunction = function
-           guard let pipelineState = MetalEngine.shared.pipelineCache.makeComputePipelineState(descriptor: descriptor) else {
-               return nil
-...cut
-
-## OUTLINE submodules/TelegramUI/Components/LiquidLens/Sources/LiquidLensView.swift (817 lines)
-10: private final class RestingBackgroundView: UIVisualEffectView {
-16: static func colorMatrix(isDark: Bool) -> [Float32] {
-24: init() {
-41: func update(isDark: Bool) {
-65: private func lensViewIsLifted(_ lensView: UIView) -> Bool? {
-78: private func lensMoveCurve(_ animation: ComponentTransition.Animation) -> (duration: Double, progress: (Double) -> CGFloat)? {
-85: if #available(iOS 26.0, *), abs(duration - 0.3832) <= 0.0001 {
-110: private func makeLensKeyframeAnimation(keyPath: String, values: [Any], times: [Double], duration: Double, beginTime: Double, timeScale: Double) -> CAK
-120: if #available(iOS 15.0, *) {
-129: public final class LiquidLensView: UIView {
-130: public enum Kind {
-136: private struct Params: Equatable {
-147: init(size: CGSize, cornerRadius: CGFloat?, selectionOrigin: CGPoint, selectionSize: CGSize, inset: CGFloat, liftedInset: CGFloat, isDark: Bool, isLift
-160: private struct LensParams: Equatable {
-166: init(baseFrame: CGRect, inset: CGFloat, liftedInset: CGFloat, isLifted: Bool) {
-255: public init(kind: Kind, backgroundTintColor: GlassBackgroundView.TintColor = GlassBackgroundView.TintColor(kind: .panel)) {
-302: if #available(iOS 26.0, *) {
-416: public func setLiftedContainer(view: UIView) {
-423: public func update(size: CGSize, cornerRadius: CGFloat? = nil, selectionOrigin: CGPoint, selectionSize: CGSize, inset: CGFloat, liftedInset: CGFloat =
-431: private func update(transition: ComponentTransition) {
-438: private func lensBounds(params: LensParams, isLifted: Bool) -> CGRect {
-445: private func setLensBounds(_ bounds: CGRect) {
-454: private func updateLens(params: LensParams, transition: ComponentTransition) {
-484: private func setLensLifted(_ isLifted: Bool, params: LensParams, transition: ComponentTransition) {
-524: if #available(iOS 17.0, *) {
-545: private func scheduleUnlift(after delay: Double, transition: ComponentTransition) {
-567: private func cancelPendingUnlift() {
-573: private func moveLens(params: LensParams, transition: ComponentTransition) {
-592: private func beginLensAnimation() {
-597: private func endLensAnimation() {
-605: private func updateIsLensMoving(segment: LiquidLensPositionSegment, now: Double) {
-626: private func setFlexActive(_ isActive: Bool) {
-636: private func lensTimeScale() -> Double {
-640: private func lensTime() -> Double {
-648: private func setLensPosition(_ center: CGPoint, transition: ComponentTransition, replans: Bool, resetsMotion: Bool = false, resetsFlex: Bool = false) 
-680: private func lensVelocity(at time: Double) -> CGPoint {
-701: private func replanLens(now: Double, resetsMotion: Bool = false, resetsFlex: Bool = false) {
-739: private func update(params: Params, transition: ComponentTransition) {
-810: private func updateRestingBackgroundAlpha(transition: ComponentTransition) {
-
-## GREP Display animationDurationFactor use
--- submodules/Display/Source/CAAnimationUtils.swift:123
-               animation.timingFunction = CAMediaTimingFunction.init(name: .linear)
-               let k = Float(UIView.animationDurationFactor())
--- submodules/Display/Source/CAAnimationUtils.swift:131
-               if !delay.isZero {
-                   animation.beginTime = self.convertTime(CACurrentMediaTime(), from: nil) + delay * UIView.animationDurationFactor()
--- submodules/Display/Source/CAAnimationUtils.swift:148
-                   
-                   let k = Float(UIView.animationDurationFactor())
--- submodules/Display/Source/CAAnimationUtils.swift:158
-                   if !delay.isZero {
-                       animation.beginTime = self.convertTime(CACurrentMediaTime(), from: nil) + delay * UIView.animationDurationFactor()
--- submodules/Display/Source/CAAnimationUtils.swift:175
-                   
-                   let k = Float(UIView.animationDurationFactor())
--- submodules/Display/Source/CAAnimationUtils.swift:185
-                   if !delay.isZero {
-                       animation.beginTime = self.convertTime(CACurrentMediaTime(), from: nil) + delay * UIView.animationDurationFactor()
--- submodules/Display/Source/CAAnimationUtils.swift:193
-               } else {
-                   let k = Float(UIView.animationDurationFactor())
--- submodules/Display/Source/CAAnimationUtils.swift:215
-                   if !delay.isZero {
-                       animation.beginTime = self.convertTime(CACurrentMediaTime(), from: nil) + delay * UIView.animationDurationFactor()
--- submodules/Display/Source/CAAnimationUtils.swift:224
-           } else {
-               let k = Float(UIView.animationDurationFactor())
--- submodules/Display/Source/CAAnimationUtils.swift:254
-               if !delay.isZero {
-                   animation.beginTime = self.convertTime(CACurrentMediaTime(), from: nil) + delay * UIView.animationDurationFactor()
--- submodules/Display/Source/CAAnimationUtils.swift:288
-       func animateKeyframes(values: [AnyObject], keyTimes: [NSNumber]? = nil, duration: Double, keyPath: String, timingFunction: String = CAMediaTimingF
-           let k = Float(UIView.animationDurationFactor())
--- submodules/Display/Source/CAAnimationUtils.swift:337
-           
-           let k = Float(UIView.animationDurationFactor())
--- submodules/Display/Source/CAAnimationUtils.swift:344
-           if !delay.isZero {
-               animation.beginTime = self.convertTime(CACurrentMediaTime(), from: nil) + delay * UIView.animationDurationFactor()
--- submodules/Display/Source/CAAnimationUtils.swift:367
-           
-           let k = Float(UIView.animationDurationFactor())
--- submodules/Display/Source/CAAnimationUtils.swift:374
-           if !delay.isZero {
-               animation.beginTime = self.convertTime(CACurrentMediaTime(), from: nil) + delay * UIView.animationDurationFactor()
--- submodules/Display/Source/CAAnimationUtils.swift:387
-       func animateAdditive(from: NSValue, to: NSValue, keyPath: String, key: String, timingFunction: String, mediaTimingFunction: CAMediaTimingFunction?
-           let k = Float(UIView.animationDurationFactor())
--- submodules/Display/Source/ListView.swift:1874
-                   }
-                   updateAnimation = .System(duration: duration * UIView.animationDurationFactor(), transition: customAnimationTransition)
--- submodules/Display/Source/ListView.swift:1879
-                   } else if updateAnimationIsAnimated {
-                       let transition = ControlledTransition(duration: insertionAnimationDuration * UIView.animationDurationFactor(), curve: .spring, int
--- submodules/Display/Source/ListView.swift:1881
-                       controlledTransition = transition
-                       updateAnimation = .System(duration: insertionAnimationDuration * UIView.animationDurationFactor(), transition: transition)
--- submodules/Display/Source/ListView.swift:2355
-                               }
-                               updateAnimation = .System(duration: duration * UIView.animationDurationFactor(), transition: customAnimationTransition)
--- submodules/Display/Source/ListView.swift:2358
-                               if animated {
-                                   let transition = ControlledTransition(duration: insertionAnimationDuration * UIView.animationDurationFactor(), curve: 
--- submodules/Display/Source/ListView.swift:2360
-                                   controlledTransition = transition
-                                   updateAnimation = .System(duration: insertionAnimationDuration * UIView.animationDurationFactor(), transition: transit
--- submodules/Display/Source/ListView.swift:2584
-                           if abs(layout.size.height - previousApparentHeight) > CGFloat.ulpOfOne {
-                               node.addApparentHeightAnimation(layout.size.height, duration: (node.updateAnimationDuration() ?? insertionAnimationDuratio
--- submodules/Display/Source/ListView.swift:2591
-                                   node.transitionOffset += previousApparentHeight - layout.size.height
-                                   node.addTransitionOffsetAnimation(0.0, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIVi
--- submodules/Display/Source/ListView.swift:2608
-               if node.animationForKey("height") == nil || !(node is ListViewTempItemNode) {
-                   node.addHeightAnimation(0.0, duration: duration * UIView.animationDurationFactor(), beginAt: timestamp)
--- submodules/Display/Source/ListView.swift:2611
-               if node.animationForKey("apparentHeight") == nil || !(node is ListViewTempItemNode) {
-                   node.addApparentHeightAnimation(0.0, duration: duration * UIView.animationDurationFactor(), beginAt: timestamp, invertOffsetDirection:
--- submodules/Display/Source/ListView.swift:2618
-               if !hasCustomRemoveAnimation {
-                   node.animateRemoved(timestamp, duration: duration * UIView.animationDurationFactor())
--- submodules/Display/Source/ListView.swift:2633
+                           self.liquidLensView.contentView.addSubview(itemComponentView)
+                           self.liquidLensView.selectedContentView.addSubview(selectedItemComponentView)
+-- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:1034
+                           self.liquidLensView.contentView.addSubview(itemComponentView)
+                           self.liquidLensView.selectedContentView.addSubview(selectedItemComponentView)
                        }
-                       node.addTransitionOffsetAnimation(0.0, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.animation
--- submodules/Display/Source/ListView.swift:2636
-                           node.insets = previousInsets
-                           node.addInsetsAnimationToValue(layout.insets, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIVie
--- submodules/Display/Source/ListView.swift:2642
-                       let addAnimation = previousFrame?.height != nodeFrame.size.height
-                       node.addApparentHeightAnimation(nodeFrame.size.height, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * 
--- submodules/Display/Source/ListView.swift:2660
-                       }
-                       node.addTransitionOffsetAnimation(0.0, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.animation
--- submodules/Display/Source/ListView.swift:2663
-                           node.insets = previousInsets
-                           node.addInsetsAnimationToValue(layout.insets, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIVie
--- submodules/Display/Source/ListView.swift:2672
-                               node.transitionOffset += node.insets.top
-                               node.addTransitionOffsetAnimation(0.0, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.a
--- submodules/Display/Source/ListView.swift:2675
-                       }
-                       node.animateInsertion(timestamp, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDurati
--- submodules/Display/Source/ListView.swift:2681
-                   if forceAnimateInsertion {
-                       node.animateInsertion(timestamp, duration: (node.insertionAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDur
--- submodules/Display/Source/ListView.swift:2686
-                   } else {
-                       node.animateAdded(timestamp, duration: (node.insertionAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDuratio
--- submodules/Display/Source/ListView.swift:3114
-                               node.insets = previousInsets
-                               node.addInsetsAnimationToValue(updatedInsets, duration: insertionAnimationDuration * UIView.animationDurationFactor(), beg
--- submodules/Display/Source/ListView.swift:3120
-                               if let currentAnimation = currentAnimation, let toFloat = currentAnimation.to as? CGFloat, toFloat.isEqual(to: updatedAppa
-                                   /*node.addApparentHeightAnimation(updatedApparentHeight, duration: insertionAnimationDuration * UIView.animationDurati
--- submodules/Display/Source/ListView.swift:3125
-                                   })
-                                   node.addTransitionOffsetAnimation(0.0, duration: insertionAnimationDuration * UIView.animationDurationFactor(), beginA
--- submodules/Display/Source/ListView.swift:3129
-                                   node.animateFrameTransition(0.0, previousApparentHeight)
-                                   node.addApparentHeightAnimation(updatedApparentHeight, duration: insertionAnimationDuration * UIView.animationDuration
-...cut
-
-## submodules/Display/Source/NavigationController.swift
-(MISSING)
-
-## GREP navigation durations
--- submodules/Display/Source/ActionSheetItemGroupNode.swift:79
-           
-           let transition = ContainedViewLayoutTransition.animated(duration: 0.3, curve: .linear)
--- submodules/Display/Source/AlertControllerNode.swift:116
-           if let previousNode = self.existingAlertControllerNode {
-               let transition =  ContainedViewLayoutTransition.animated(duration: 0.3, curve: .spring)
--- submodules/Display/Source/ListView.swift:3332
-           if let scrollToItem = scrollToItem, scrollToItem.animated {
-               offsetTransition = .animated(duration: 0.3, curve: .easeInOut)
--- submodules/Display/Source/ListView.swift:3560
-           if let scrollToItem = scrollToItem, scrollToItem.animated {
-               accessoryNodesTransition = .animated(duration: 0.3, curve: .easeInOut)
--- submodules/Display/Source/ListView.swift:4178
-                               if !previousFrame.isEmpty {
-                                   ContainedViewLayoutTransition.animated(duration: 0.35, curve: .spring).animatePositionAdditive(node: headerNode, offse
--- submodules/Display/Source/ListView.swift:5156
-       public func updateNodeHighlightsAnimated(_ animated: Bool) {
-           let transition: ContainedViewLayoutTransition = animated ? .animated(duration: 0.35, curve: .spring) : .immediate
--- submodules/Display/Source/StatusBar.swift:67
-               self._statusBarStyle = statusBarStyle
-               self.alphaUpdated?(animated ? .animated(duration: 0.3, curve: .easeInOut) : .immediate)
--- submodules/Display/Source/WindowContent.swift:646
-                   
-                   let transition: ContainedViewLayoutTransition = .animated(duration: 0.35, curve: .easeInOut)
--- submodules/Display/Source/WindowContent.swift:1011
-       
-       public func setForceInCallStatusBar(_ forceInCallStatusBarText: String?, transition: ContainedViewLayoutTransition = .animated(duration: 0.3, curv
--- submodules/Display/Source/WindowContent.swift:1150
-           let onlyDivisionChanged = self.updatingLayout == nil && reservedArea.safeInsets == current.reservedArea.safeInsets && reservedArea.reservedCor
-           let transition: ContainedViewLayoutTransition = onlyDivisionChanged ? .animated(duration: 0.3, curve: .spring) : .immediate
--- submodules/Display/Source/WindowContent.swift:1283
-                           
-                           navigationController.updateExternalStatusBarHidden(isStatusBarHidden, transition: .animated(duration: 0.3, curve: .easeInOut))
--- submodules/Display/Source/Navigation/NavigationContainer.swift:108
-                       self.view.endEditing(true)
-                       self.performUpdate(transition: .animated(duration: 0.5, curve: .spring))
--- submodules/Display/Source/Navigation/NavigationContainer.swift:859
-                               self.statusBarStyle = target
-                               self.statusBarStyleUpdated?(.animated(duration: 0.3, curve: .easeInOut))
--- submodules/Display/Source/Navigation/NavigationContainer.swift:1112
-               self.statusBarStyle = updatedStatusBarStyle
-               self.statusBarStyleUpdated?(.animated(duration: 0.3, curve: .easeInOut))
--- submodules/Display/Source/Navigation/NavigationController.swift:194
-                   self.isMaximizing = true
-                   self.updateContainersNonReentrant(transition: .animated(duration: 0.4, curve: .spring))
--- submodules/Display/Source/Navigation/NavigationController.swift:201
-                   self.minimizedContainer = nil
-                   self.updateContainersNonReentrant(transition: .animated(duration: 0.4, curve: .spring))
--- submodules/Display/Source/Navigation/NavigationController.swift:210
-                   }
-                   self.updateContainersNonReentrant(transition: .animated(duration: 0.3, curve: .easeInOut))
--- submodules/Display/Source/Navigation/NavigationController.swift:656
-                           }
-                           strongSelf.updateContainersNonReentrant(transition: .animated(duration: 0.5, curve: .spring))
--- submodules/Display/Source/Navigation/NavigationController.swift:1801
-           if let layout = self.validLayout {
-               self.updateContainers(layout: layout, transition: animated ? .animated(duration: 0.5, curve: .spring) : .immediate, completion: { [weak se
--- submodules/Display/Source/Navigation/NavigationController.swift:1812
-       public func minimizeViewController(_ viewController: MinimizableController, topEdgeOffset: CGFloat? = nil, damping: CGFloat? = nil, velocity: CGFl
-           let transition: ContainedViewLayoutTransition = animated ? .animated(duration: 0.4, curve: .customSpring(damping: damping ?? 124.0, initialVel
--- submodules/Display/Source/Navigation/NavigationController.swift:1833
-               self.isMaximizing = true
-               self.updateContainersNonReentrant(transition: .animated(duration: 0.4, curve: .spring))
--- submodules/Display/Source/Navigation/NavigationController.swift:1863
-           })
-           self.updateContainersNonReentrant(transition: animated ? .animated(duration: 0.4, curve: .spring) : .immediate)
--- submodules/Display/Source/Navigation/NavigationController.swift:2026
-       
-       public func setForceInCallStatusBar(_ forceInCallStatusBar: CallStatusBarNode?, transition: ContainedViewLayoutTransition = .animated(duration: 0.
--- submodules/Display/Source/Navigation/NavigationModalContainer.swift:205
-                   self.dismissProgress = 1.0
-                   let transition: ContainedViewLayoutTransition = .animated(duration: 0.5, curve: .spring)
--- submodules/Display/Source/Navigation/NavigationModalContainer.swift:320
-               targetOffset = self.bounds.height
-               transition = .animated(duration: 0.5, curve: .spring)
-...cut
-
-## OUTLINE submodules/TelegramUI/Sources/AppDelegate.swift (3778 lines)
-74: #if DEBUG
-80: private func isTonTransferUrl(_ url: URL) -> Bool {
-87: private func isKeyboardWindow(window: NSObject) -> Bool {
-89: if #available(iOS 9.0, *) {
-101: private func isKeyboardView(view: NSObject) -> Bool {
-112: private func isKeyboardViewContainer(view: NSObject) -> Bool {
-123: private class ApplicationStatusBarHost: StatusBarHost {
-126: init(scene: UIWindowScene?) {
-190: private func legacyDocumentsPath() -> String {
-194: protocol SupportedStartCallIntent {
-195: @available(iOS 10.0, *)
-199: extension INStartCallIntent: SupportedStartCallIntent {}
-201: protocol SupportedStartVideoCallIntent {
-202: @available(iOS 10.0, *)
-206: private enum QueuedWakeup: Int32 {
-211: final class SharedApplicationContext {
-218: init(sharedContext: SharedAccountContextImpl, notificationManager: SharedNotificationManager, wakeupManager: SharedWakeupManager) {
-226: private struct AccountManagerState {
-227: struct NotificationKey {
-236: private func extractAccountManagerState(records: AccountRecordsView<TelegramAccountManagerTypes>) -> AccountManagerState {
-330: private func urlSession(identifier: String) -> URLSession {
-373: func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-458: if #available(iOS 13.0, *) {
-495: if #available(iOS 10.0, *) {
-545: if #available(iOS 10.0, *) {
-559: if #available(iOS 10.0, *) {
-583: if #available(iOS 10.0, *) {
-618: if #available(iOS 10.0, *) {
-641: #if DEBUG
-745: #if DEBUG
-868: if #available(iOS 10.0, *) {
-946: if #available(iOS 10.0, *) {
-1032: if #available(iOS 15, *), let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-1058: if buildConfig.isSiriEnabled, rgSignatureGrants(RGEntitlement.siri), #available(iOS 10, *) {
-1071: if #available(iOS 10, *) {
-1100: if #available(iOS 10.3, *) {
-1107: guard #available(iOS 10.3, *) else {
-1115: if #available(iOSApplicationExtension 16.0, iOS 16.0, *) {
-1183: if #available(iOS 9.0, *) {
-1196: if #available(iOS 13.0, *) {
-1260: #if targetEnvironment(simulator)
-1507: #if DEBUG
-1525: if #available(iOS 10.0, *) {
-1538: if #available(iOS 13.0, *) {
-1627: if #available(iOS 13.0, *) {
-1666: if #available(iOS 9.1, *) {
-1737: if #available(iOS 13.0, *) {
-1784: if #available(iOS 12.0, *) {
-1803: if #available(iOS 13.0, *) {
-1881: func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) 
-1892: func attach(scene: UIWindowScene, connectionOptions: UIScene.ConnectionOptions) {
-1943: func uploadInBackround(postbox: Postbox, resource: MediaResource) -> Signal<String?, NoError> {
-2016: private func addBackgroundUploadTask(id: String, path: String) {
-2071: private func addBackgroundDownloadTask() {
-2084: func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-2099: private func runCacheReindexTasks(lowImpact: Bool, completion: @escaping () -> Void) -> Disposable {
-2123: private func resetBadge() {
-2144: func handleWillResignActive() {
-2173: func handleDidEnterBackground() {
-2180: if #available(iOS 9.0, *) {
-2204: final class TaskIdHolder {
-2222: func handleWillEnterForeground() {
-2229: if #available(iOSApplicationExtension 12.0, *) {
-2242: func runForegroundTasks() {
-2266: func handleDidBecomeActive() {
-2308: func cancelWindowPanGestures(view: UIView) {
-2325: func applicationWillTerminate(_ application: UIApplication) {
-2329: func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-2334: func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-2338: func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @
-2404: public func pushRegistry(_ registry: PKPushRegistry, didUpdate credentials: PKPushCredentials, for type: PKPushType) {
-2405: if #available(iOS 9.0, *) {
-2414: public func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping ()
-2420: public func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType) {
-2426: private func pushRegistryImpl(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escapi
-2725: public func pushRegistry(_ registry: PKPushRegistry, didInvalidatePushTokenFor type: PKPushType) {
-2729: private func reportFailedIncomingCallKitCall() {
-2730: if #available(iOS 14.4, *) {
-2758: private func authorizedContext() -> Signal<AuthorizedApplicationContext, NoError> {
-2769: func handleOpenURL(_ url: URL) {
-2776: private func presentWalletUnavailable(in context: AuthorizedApplicationContext) {
-2781: #if DEBUG
-2786: private func runCommentsCacheResetLaunchArguments(context: AccountContext) {
-2788: func value(after flag: String) -> String? {
-2827: private func openUrl(url: URL) {
-2887: if #available(iOS 10.0, *) {
-2903: func cleanPhoneNumber(_ text: String) -> String {
-2917: func matchPhoneNumbers(_ lhs: String, _ rhs: String) -> Bool {
-3053: func handleShortcutItem(_ shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
-3096: private func openNotificationSettingsWhenReady() {
-3104: private func startCallWhenReady(accountId: AccountRecordId?, peerId: PeerId, isVideo: Bool) {
-3126: private func openChatWhenReady(accountId: AccountRecordId?, peerId: PeerId, threadId: Int64?, messageId: MessageId? = nil, activateInput: Bool = false
-3160: private func openNextWalletTonConnectNotification() {
-3195: private func openUrlWhenReady(accountId: AccountRecordId? = nil, url: URL, external: Bool = false) {
-3238: func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: 
-3342: func requestNotificationTokenInvalidation() {
-3349: private func registerForNotifications(context: AccountContextImpl, authorize: Bool = true, completion: @escaping (Bool) -> Void = { _ in }) {
-3360: private func registerForNotifications(replyString: String, messagePlaceholderString: String, hiddenContentString: String, hiddenReactionContentString:
-3369: if #available(iOS 12.0, *) {
-3435: @available(iOS 10.0, *)
-3436: func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @es
-3465: @available(iOS 12.0, *)
-3466: func userNotificationCenter(_ center: UNUserNotificationCenter, openSettingsFor notification: UNNotification?) {
-3470: func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String, completionHandler: @escaping () -> Void) {
-3484: private func maybeCheckForUpdates() {
-3485: #if targetEnvironment(simulator)
-3554: @objc func debugPressed() {
-3568: private func resetIntentsIfNeeded(context: AccountContextImpl) {
-3575: if self.buildConfig?.isSiriEnabled ?? false, rgSignatureGrants(RGEntitlement.siri), #available(iOS 10.0, *) {
-3588: private func notificationPayloadKey(data: Data) -> Data? {
-3595: @available(iOS 10.0, *)
-3596: private func accountIdFromNotification(_ notification: UNNotification, sharedContext: Signal<SharedApplicationContext, NoError>) -> Signal<AccountReco
-3656: @available(iOS 10.0, *)
-3657: private func peerIdFromNotification(_ notification: UNNotification) -> (peerId: PeerId, threadId: Int64?)? {
-3689: private func messageIdFromNotification(peerId: PeerId, notification: UNNotification) -> MessageId? {
-3702: private func storyIdFromNotification(peerId: PeerId, notification: UNNotification) -> StoryId? {
-3711: private enum DownloadFileError {
-3715: private func downloadHTTPData(url: URL) -> Signal<Data, DownloadFileError> {
-3737: private func getMemoryConsumption() -> Int {
-3756: final class UpdateSettings: Codable, Equatable {
-3759: init(url: String?) {
-3763: static func ==(lhs: UpdateSettings, rhs: UpdateSettings) -> Bool {
-3768: private final class NavigationBarOverflowMenuReferenceSource: ContextReferenceContentSource {
-3771: init(sourceView: UIView) {
-3775: func transitionInfo() -> ContextControllerReferenceViewInfo? {
-
-## GREP startup delays/timers
--- submodules/TelegramUI/Sources/AppDelegate.swift:1262
-               if CommandLine.arguments.contains("--context-menu-morph-gallery") {
-                   DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
-                       self?.mainWindow.present(ContextMenuMorphDebugController(), on: .root)
--- submodules/TelegramUI/Sources/AppDelegate.swift:1585
-                       |> deliverOnMainQueue).start(completed: {
-                           Queue.mainQueue().after(0.75) {
-                               authContextValue.rootController.view.endEditing(true)
--- submodules/TelegramUI/Sources/AppDelegate.swift:1791
-           var previousReportedMemoryConsumption = 0
-           let _ = Foundation.Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true, block: { _ in
-               let value = getMemoryConsumption()
--- submodules/TelegramUI/Sources/AppDelegate.swift:2215
-           })
-           DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 5.0, execute: {
-               if let taskId = taskIdHolder.taskId {
--- submodules/TelegramUI/Sources/AppDelegate.swift:2286
-               for delay in [0.25, 1.0] {
-                   DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-                       guard self?.isInForegroundValue == true, RGNotificationExperiment.isEnabled else { return }
--- submodules/TelegramUI/Sources/AppDelegate.swift:2752
-               )
-               Queue.mainQueue().after(1.0, {
-                   callKitIntegration.dropCall(uuid: uuid)
--- submodules/TelegramUI/Sources/AppDelegate.swift:3232
+-- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:1091
+               transition.setFrame(view: self.contextGestureContainerView, frame: tabsFrame)
+               transition.setFrame(view: self.liquidLensView, frame: CGRect(origin: CGPoint(), size: tabsSize))
                
-               Queue.mainQueue().after(1.0, {
-                   self?.openUrlInProgress = nil
--- submodules/TelegramUI/Sources/AppDelegate.swift:3344
-           UIApplication.shared.unregisterForRemoteNotifications()
-           DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 1.0, execute: {
-               UIApplication.shared.registerForRemoteNotifications()
--- submodules/TelegramUI/Sources/ApplicationContext.swift:778
-                           if !didAppear {
-                               Queue.mainQueue().after(0.15, {
-                                   (strongSelf.rootController.viewControllers.last as? ViewController)?.present(controller, in: .window(.root), with: Vie
--- submodules/TelegramUI/Sources/ChatCameraFlow.swift:567
-           })
-           Queue.mainQueue().after(1.5) { [weak self] in
-               guard let self, self.isSending, self.sendAttempt == attempt else {
--- submodules/TelegramUI/Sources/ChatController.swift:940
-                   self.present(contextController, in: .window(.root))
-                   Queue.mainQueue().after(0.15) {
-                       contextController.dismiss(result: .dismissWithoutContent, completion: nil)
--- submodules/TelegramUI/Sources/ChatController.swift:952
-                   if self.presentVoiceMessageDiscardAlert(action: { [weak self] in
-                       Queue.mainQueue().after(0.1, {
-                           guard let self else {
--- submodules/TelegramUI/Sources/ChatController.swift:1279
-                                       let controller = self.context.sharedContext.makeGiftViewScreen(context: self.context, gift: uniqueGift, shareStory
-                                           Queue.mainQueue().after(0.15) {
-                                               if let self {
--- submodules/TelegramUI/Sources/ChatController.swift:1287
-                                           if let self {
-                                               Queue.mainQueue().after(0.15) {
-                                                   self.presentThemeSelection()
--- submodules/TelegramUI/Sources/ChatController.swift:1345
-                                   |> deliverOnMainQueue).startStandalone()
-                                   Queue.mainQueue().after(0.1) {
-                                       wallpaperPreviewController?.dismiss()
--- submodules/TelegramUI/Sources/ChatController.swift:1363
-                                   let controller = self.context.sharedContext.makeGiftViewScreen(context: self.context, message: EngineMessage(message),
-                                       Queue.mainQueue().after(0.15) {
-                                           if let self {
--- submodules/TelegramUI/Sources/ChatController.swift:1532
-                               let controller = self.context.sharedContext.makeGiftViewScreen(context: self.context, message: EngineMessage(message), sha
-                                   Queue.mainQueue().after(0.15) {
-                                       if let self {
--- submodules/TelegramUI/Sources/ChatController.swift:1801
-                                           self?.present(c, in: .window(.root), with: a)
-                                           Queue.mainQueue().after(0.35) {
-                                               transitionCompletion()
--- submodules/TelegramUI/Sources/ChatController.swift:2462
-                   let text = strongSelf.presentationData.strings.VoiceOver_Chat_MessagesSelected(Int32(count))
-                   DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.1, execute: {
-                       UIAccessibility.post(notification: UIAccessibility.Notification.announcement, argument: text as NSString)
--- submodules/TelegramUI/Sources/ChatController.swift:2792
-                               
-                               Queue.mainQueue().after(0.5, {
-                                   strongSelf.displayEmojiTooltip()
--- submodules/TelegramUI/Sources/ChatController.swift:4353
-                       if controllerInteraction.pollActionState.pollMessageIdsInProgress.removeValue(forKey: id) != nil {
-                           Queue.mainQueue().after(1.0, {
-                               strongSelf.chatDisplayNode.historyNode.requestMessageUpdate(id)
--- submodules/TelegramUI/Sources/ChatController.swift:4398
-                       if controllerInteraction.pollActionState.pollMessageIdsInProgress.removeValue(forKey: id) != nil {
-                           Queue.mainQueue().after(1.0, {
-                               strongSelf.chatDisplayNode.historyNode.requestMessageUpdate(id)
--- submodules/TelegramUI/Sources/ChatController.swift:7022
-                                       
-                                       Queue.mainQueue().after(1.0, {
-                                           theme.forceSync = false
--- submodules/TelegramUI/Sources/ChatController.swift:7035
-                                   
-                                   Queue.mainQueue().after(1.0, {
-                                       theme.forceSync = false
--- submodules/TelegramUI/Sources/ChatController.swift:7046
-                           previewTheme.forceSync = true
-                           Queue.mainQueue().after(1.0, {
-                               previewTheme.forceSync = false
-...cut
+-- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:1107
+               
+               self.liquidLensView.update(size: lensSize, cornerRadius: component.axis == .vertical ? lensSize.width * 0.5 : nil, selectionOrigin: lensSe
+   
 
-## FULL build-system/check-regram-story-flags.py (59 lines, showing 59)
-1: #!/usr/bin/env python3
-2: """Check raw story flag persistence independently of the live local UI override."""
-3: from pathlib import Path
-4: import subprocess
-5: import tempfile
+## OUTLINE submodules/TelegramUI/Components/GlassBarButtonComponent/Sources/GlassBarButtonComponent.swift (511 lines)
+9: public final class GlassBarButtonComponent: Component {
+10: public enum DisplayState: Equatable {
+28: public init(
+54: public static func ==(lhs: GlassBarButtonComponent, rhs: GlassBarButtonComponent) -> Bool {
+88: public final class View: UIView, ComponentTaggedView {
+89: public func matches(tag: Any) -> Bool {
+115: public override init(frame: CGRect) {
+152: @objc private func pressed() {
+159: override public func accessibilityActivate() -> Bool {
+167: @objc private func onTapGesture(_ recognizer: UITapGestureRecognizer) {
+176: override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+186: func update(component: GlassBarButtonComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: Compon
+348: public func makeView() -> View {
+352: public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) ->
+359: public final class BarComponentHostView: UIView {
+362: public func update(component: AnyComponent<Empty>, transition: ComponentTransition) {
+371: public override func sizeThatFits(_ size: CGSize) -> CGSize {
+376: public final class BarComponentHostNode: ASDisplayNode {
+386: public init(component: AnyComponentWithIdentity<Empty>?, size: CGSize) {
+396: private func updateComponent(previousComponent: AnyComponentWithIdentity<Empty>?, transition: ComponentTransition) {
+444: public override func calculateSizeThatFits(_ constrainedSize: CGSize) -> CGSize {
+449: private class SimpleGlassView: UIView {
+453: private struct Params: Equatable {
+459: init(size: CGSize, cornerRadius: CGFloat, isDark: Bool, tintColor: GlassBackgroundView.TintColor) {
+469: public override init(frame: CGRect) {
+483: override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+487: public func update(size: CGSize, cornerRadius: CGFloat, isDark: Bool, tintColor: GlassBackgroundView.TintColor, isInteractive: Bool = false, transitio
+
+## FULL submodules/TelegramUI/Components/NavigationBarComponent/Sources/NavigationBarPlatterTransitionView.swift (1319 lines, showing 380)
+1: import Foundation
+2: import UIKit
+3: import Display
+4: import ComponentFlow
+5: import GlassBackgroundComponent
 6: 
-7: root = Path(__file__).resolve().parents[1]
-8: raw = (root / 'submodules/TelegramCore/Sources/TelegramEngine/Messages/Stories.swift').read_text().splitlines()
-9: projection = (root / 'submodules/TelegramCore/Sources/TelegramEngine/Messages/StoryListContext.swift').read_text().splitlines()
-10: constructor = next(line for line in raw if 'self.isForwardingDisabled = isForwardingDisabled' in line)
-11: decoder = next(line for line in raw if 'self.isForwardingDisabled =' in line and 'decodeIfPresent' in line)
-12: encoder = next(line for line in raw if 'try container.encode(self.isForwardingDisabled,' in line)
-13: effective = next(line.strip() for line in projection if 'public var isForwardingDisabled: Bool {' in line)
-14: source = '''import Foundation
-15: final class RGSimpleSettings { static let shared = RGSimpleSettings(); var allowDownloadingStories = false }
-16: struct RawStory: Codable {
-17:  enum CodingKeys: String, CodingKey { case isForwardingDisabled }
-18:  let isForwardingDisabled: Bool
-19:  init(isForwardingDisabled: Bool) {
-20: ''' + constructor + '''
-21:  }
-22:  init(from decoder: Decoder) throws { let container = try decoder.container(keyedBy: CodingKeys.self)
-23: ''' + decoder + '''
-24:  }
-25:  func encode(to encoder: Encoder) throws { var container = encoder.container(keyedBy: CodingKeys.self)
-26: ''' + encoder + '''
-27:  }
-28: }
-29: struct Projection {
-30:  let serverForwardingDisabled: Bool
-31: ''' + effective + '''
-32: }
-33: @main enum Checks {
-34:  static func main() throws {
-35:   let settings = RGSimpleSettings.shared, encoder = JSONEncoder(), decoder = JSONDecoder()
-36:   let original = try encoder.encode(RawStory(isForwardingDisabled: true))
-37:   let live = Projection(serverForwardingDisabled: true)
-38:   precondition(live.isForwardingDisabled)
-39:   settings.allowDownloadingStories = true
-40:   precondition(!live.isForwardingDisabled)
-41:   let incoming = try encoder.encode(RawStory(isForwardingDisabled: true))
-42:   let reread = try decoder.decode(RawStory.self, from: original)
-43:   let rewritten = try encoder.encode(reread)
-44:   precondition(reread.isForwardingDisabled)
-45:   settings.allowDownloadingStories = false
-46:   for data in [original, incoming, rewritten] {
-47:    let value = try decoder.decode(RawStory.self, from: data)
-48:    precondition(value.isForwardingDisabled)
-49:   }
-50:   precondition(live.isForwardingDisabled && !Projection(serverForwardingDisabled: false).isForwardingDisabled)
-51:   print("Story protection passed: raw flags survive parse/save/reopen with the override enabled; existing UI projections honor on/off changes without a refetch.")
-52:  }
-53: }
-54: '''
-55: with tempfile.TemporaryDirectory(prefix='regram-story-flags-') as temporary:
-56:     work = Path(temporary)
-57:     (work / 'Checks.swift').write_text(source)
-58:     subprocess.run(['xcrun', 'swiftc', '-swift-version', '5', '-parse-as-library', '-warnings-as-errors', str(work / 'Checks.swift'), '-o', str(work / 'checks')], check=T
-59:     subprocess.run([str(work / 'checks')], check=True, timeout=10)
+7: /// The glass capsules of a navigation transition between two bars, animated as iOS 27 does it: SwiftUI's GlassContainer
+8: /// under the bar's v2 platter container, with the toolbar settings (see
+9: /// docs/superpowers/specs/2026-10-13-native-navigation-glass-platters-ios27-re.md).
+10: ///
+11: /// Capsules are matched between the two bars by role (leading: back and left button; trailing: the outermost right
+12: /// platter, the accent circle when there is one; trailing inner: the capsule beside it), as UIKit pairs `SectionID`s by
+13: /// index from the edge. iPhone Duo's column shapes pair the same way, by index from the column's top: Chats' story
+14: /// capsule and compose circle become the chat's back circle and avatar capsule in place.
+15: /// - **Present on both bars:** one glass shape that morphs to the new frame on `Spring(0.416, bounce 0.25)`. If the
+16: ///   items changed, the old ones shrink away and the new ones grow in (matched items: scale 0.2, transparent, blur 10,
+17: ///   on the same spring), the shape gives SwiftUI's scale pulse, and a tint change cross-fades on the one shape.
+18: /// - **Present on one bar:** materializes or dematerializes in place: scale 1.2 (at most 16 pt larger per axis),
+19: ///   opacity 0 and blur 10 ↔ identity, on the same `Spring(0.416, bounce 0.25)` (measured, glass RE §2.2; under
+20: ///   Reduce Motion without the bounce). Except the capsule beside an accent circle, which collapses into the other bar's
+21: ///   outermost right platter after UIKit's minimum delay, or grows out of it at once, with the kick and the `.match`
+22: ///   appearance (`startMatchedMorph`). Its glass merges with that platter's meanwhile, as iOS 27's does: the bar's
+23: ///   platters are elements of one SDF layer at smoothness 12, and the collapsing one keeps opacity 1 while its frame
+24: ///   shrinks into the other (measured). So the two right platters' glass shares one container at that spacing, drawn at
+25: ///   its scaled frame, and only the items fade. A title pill never does: without a platter in its slot on the other bar
+26: ///   it materializes or dematerializes in place.
+27: ///
+28: /// Measured against the native reference app on iOS 27 (`Tests/NativeNavigationReference`): Edit → Done swells the
+29: /// capsule by ~21% (height peak at ~0.11 s, width at ~0.15 s, width undershoot ~5% at ~0.33 s) and cross-fades its
+30: /// tint in ~0.2 s.
+31: ///
+32: /// None of this follows the transition's progress: UIKit hands the destination capsules over when a push or pop
+33: /// starts, and the springs run in time. A swipe back is the exception. The outgoing bar's capsules are pulled toward
+34: /// their counterparts by half the progress, on `Spring(0.2, 0)`, and the sets switch only on release or cancel.
+35: public final class NavigationBarPlatterTransitionView: UIView {
+36:     public struct Side {
+37:         public var content: NavigationBarComponent.Content
+38:         public var theme: NavigationBarTheme
+39:         public var strings: NavigationBarStrings
+40:         public var leftInset: CGFloat
+41:         public var rightInset: CGFloat
+42:         public var trailingButtonsInset: CGFloat
+43:         /// The bar's row in this view.
+44:         public var rowFrame: CGRect
+45:         /// The press UIKit was drawing on the leading capsule when the bar gave its capsules to the transition (1: none), as
+46:         /// the bar measured it (`NavigationBarComponent.View.detachedLeftPressScale`).
+47:         public var leadingPressScale: CGFloat
+48:         /// UIKit's press glow on the leading capsule at that moment (its BigGlow's opacity, 0: none), as the bar measured
+49:         /// it (`NavigationBarComponent.View.detachedLeftPressGlow`).
+50:         public var leadingPressGlow: CGFloat
+51:         /// The press and glow on each right platter, index from the edge (`detachedRightPressScales`,
+52:         /// `detachedRightPressGlows`; missing: none).
+53:         public var trailingPressScales: [CGFloat]
+54:         public var trailingPressGlows: [CGFloat]
+55:         /// iPhone Duo: the bar's side column region in this view (its capsules are drawn like the row's); nil without one.
+56:         public var columnFrame: CGRect?
+57:         /// The bar hides its column's buttons (a replacement content, such as an active search).
+58:         public var hidesColumnButtons: Bool
+59:         /// The title's glass pill (the chat header), its frame in this view: the bar's second right platter.
+60:         public var titlePill: NavigationBarTransitionTitlePill?
+61: 
+62:         public init(content: NavigationBarComponent.Content, theme: NavigationBarTheme, strings: NavigationBarStrings, leftInset: CGFloat, rightInset: CGFloat, trailingBu
+63:             self.titlePill = titlePill
+64:             self.content = content
+65:             self.theme = theme
+66:             self.strings = strings
+67:             self.leftInset = leftInset
+68:             self.rightInset = rightInset
+69:             self.trailingButtonsInset = trailingButtonsInset
+70:             self.rowFrame = rowFrame
+71:             self.leadingPressScale = leadingPressScale
+72:             self.leadingPressGlow = leadingPressGlow
+73:             self.trailingPressScales = trailingPressScales
+74:             self.trailingPressGlows = trailingPressGlows
+75:             self.columnFrame = columnFrame
+76:             self.hidesColumnButtons = hidesColumnButtons
+77:         }
+78:     }
+79: 
+80:     /// A capsule's place: the row's leading capsule, a right platter by index from the edge (UIKit's
+81:     /// `SectionID(index, owner)`: 0 the outermost), and an iPhone Duo column shape by index from the column's top (the
+82:     /// back circle, buttons capsule and trailing circle a bar has, in that order).
+83:     enum Role: Hashable {
+84:         case leading
+85:         case trailing(Int)
+86:         case column(Int)
+87: 
+88:         /// Every role, with right platters up to `rightCount` and column shapes up to `columnCount`.
+89:         static func all(rightCount: Int, columnCount: Int) -> [Role] {
+90:             return [.leading] + (0 ..< rightCount).map { .trailing($0) } + (0 ..< columnCount).map { .column($0) }
+91:         }
+92: 
+93:         var rightIndex: Int? {
+94:             if case let .trailing(index) = self {
+95:                 return index
+96:             }
+97:             return nil
+98:         }
+99: 
+100:         var columnIndex: Int? {
+101:             if case let .column(index) = self {
+102:                 return index
+103:             }
+104:             return nil
+105:         }
+106:     }
+107: 
+108:     private enum SideKind {
+109:         case bottom
+110:         case top
+111:     }
+112: 
+113:     /// One bar's items in a capsule, at the frame they have in that bar.
+114:     private final class Items {
+115:         let side: SideKind
+116:         let view: UIView
+117:         var frame: CGRect
+118:         /// 0: present, 1: dematerialized (transparent, blurred, scaled by `maxScale`).
+119:         var appearance: NavigationSpringCurve
+120:         /// The scale at 1: up to 1.2 for items appearing with their capsule, 0.2 for items swapped in a kept one.
+121:         var maxScale: CGSize
+122:         let blurRadius: CGFloat
+123:         var isLeaving = false
+124:         /// Centred in their capsule wherever it is, rather than where their bar has them: a title pill its bar moved
+125:         /// (`switchTo`). They keep their size; the lent title lays itself out about their centre.
+126:         var ridesPlatter = false
+127:         /// While riding: how far they still are from their capsule's centre, easing to nothing, so that they take up
+128:         /// from where they were.
+129:         var rideOffsetX = NavigationSpringCurve.constant(0.0, rest: .glass(0.01))
+130:         var rideOffsetY = NavigationSpringCurve.constant(0.0, rest: .glass(0.01))
+131: 
+132:         init(side: SideKind, view: UIView, frame: CGRect, appearance: CGFloat, motion: NavigationBarGlassMotion) {
+133:             self.side = side
+134:             self.view = view
+135:             self.frame = frame
+136:             self.appearance = .constant(appearance, rest: .glass(0.001))
+137:             self.maxScale = motion.materializeScale(size: frame.size)
+138:             self.blurRadius = motion.blurRadius
+139:         }
+140: 
+141:         /// Where the items are in their capsule at `time`, the capsule being at `platterFrame`.
+142:         func center(inPlatterAt platterFrame: CGRect, time: Double) -> CGPoint {
+143:             if self.ridesPlatter {
+144:                 return CGPoint(x: platterFrame.width * 0.5 + self.rideOffsetX.value(at: time), y: platterFrame.height * 0.5 + self.rideOffsetY.value(at: time))
+145:             }
+146:             return CGPoint(x: self.frame.midX - platterFrame.minX, y: self.frame.midY - platterFrame.minY)
+147:         }
+148: 
+149:         /// From now on centred in their capsule, now at `platterFrame` with its centre moving at `platterVelocity`: they
+150:         /// start where they are, at rest, and ease into the centre.
+151:         func startRiding(platterFrame: CGRect, platterVelocity: CGPoint, spring: NavigationTransitionSpring, at time: Double) {
+152:             let center = self.center(inPlatterAt: platterFrame, time: time)
+153:             self.ridesPlatter = true
+154:             self.rideOffsetX = NavigationSpringCurve(startTime: time, from: center.x - platterFrame.width * 0.5, velocity: -platterVelocity.x, target: 0.0, spring: spring
+155:             self.rideOffsetY = NavigationSpringCurve(startTime: time, from: center.y - platterFrame.height * 0.5, velocity: -platterVelocity.y, target: 0.0, spring: sprin
+156:         }
+157:     }
+158: 
+159:     private final class Platter {
+160:         let role: Role
+161:         /// The glass. A glass container's own alpha does hide its glass (a shape's does not), so each capsule has its
+162:         /// own container; a tint change adds a second one with the old tint, fading out above it.
+163:         let container: GlassBackgroundContainerView
+164:         let glass: GlassBackgroundView
+165:         var fadingContainer: GlassBackgroundContainerView?
+166:         var fadingGlass: GlassBackgroundView?
+167:         var fadingTint: GlassBackgroundView.TintColor?
+168:         var tintFade = NavigationSpringCurve.constant(0.0, rest: .glass(0.001))
+169:         /// The items, above both glass layers.
+170:         let itemsHost: UIView
+171:         var pulse: NavigationBarGlassPulseCurve?
+172:         /// The press UIKit was drawing when the transition took the capsule, releasing (1: none).
+173:         var press = NavigationSpringCurve.constant(1.0, rest: .glass(0.0005))
+174:         /// UIKit's press glow taken over with the press, fading (0: none), and the view that draws it.
+175:         var glow = NavigationSpringCurve.constant(0.0, rest: .glass(0.001))
+176:         var glowView: NavigationBarPressGlowView?
+177:         var x: NavigationSpringCurve
+178:         var y: NavigationSpringCurve
+179:         var width: NavigationSpringCurve
+180:         var height: NavigationSpringCurve
+181:         /// The glass's corner radius over a circle's (half its shorter side): 1 for a capsule or circle, less for a
+182:         /// button with its own radius (`Button.glassCornerRadius`, a forum's square avatar).
+183:         var roundness: NavigationSpringCurve
+184:         /// 0: present, 1: dematerialized (transparent, blurred, scaled up).
+185:         var dematerialization: NavigationSpringCurve
+186:         var maxScale = CGSize(width: 1.0, height: 1.0)
+187:         var blurRadius = NavigationBarGlassSettings.blurRadius
+188:         var tint: GlassBackgroundView.TintColor
+189:         var isDark: Bool
+190:         var items: [Items] = []
+191:         var isLeaving = false
+192:         /// SwiftUI's translation kick of a matched insertion or removal (`startMatchedMorph`).
+193:         var kick: NavigationBarKickCurve?
+194:         /// A matched insertion or removal: it grows out of, or collapses into, its `partner` (the nearest platter of the
+195:         /// other bar nearer the edge), its glass merged with that one's (`mergesGlass`).
+196:         var isMatched = false
+197:         /// The platter a matched one collapses into or grows out of.
+198:         var partner: Role?
+199:         /// It is a bar's title pill (`SideLayout.titlePillRole`), which only morphs with a platter in its own slot.
+200:         var isTitlePill = false
+201: 
+202:         init(role: Role, frame: CGRect, tint: GlassBackgroundView.TintColor, isDark: Bool) {
+203:             self.role = role
+204:             self.container = GlassBackgroundContainerView()
+205:             self.container.isUserInteractionEnabled = false
+206:             self.glass = GlassBackgroundView()
+207:             self.container.contentView.addSubview(self.glass)
+208:             self.itemsHost = UIView()
+209:             self.itemsHost.isUserInteractionEnabled = false
+210:             self.x = .constant(frame.minX, rest: .glass(0.01))
+211:             self.y = .constant(frame.minY, rest: .glass(0.01))
+212:             self.width = .constant(frame.width, rest: .glass(0.01))
+213:             self.height = .constant(frame.height, rest: .glass(0.01))
+214:             self.roundness = .constant(1.0, rest: .glass(0.001))
+215:             self.dematerialization = .constant(0.0, rest: .glass(0.001))
+216:             self.tint = tint
+217:             self.isDark = isDark
+218:         }
+219: 
+220:         func frame(at time: Double) -> CGRect {
+221:             let kick = self.kick?.translation(at: time) ?? CGSize()
+222:             return CGRect(x: self.x.value(at: time) + kick.width, y: self.y.value(at: time) + kick.height, width: max(0.0, self.width.value(at: time)), height: max(0.0, s
+223:         }
+224: 
+225:         /// The frame the shape draws at: its frame scaled about its centre by its appearance and its press, then about its
+226:         /// pulse's anchor by its pulse.
+227:         func glassFrame(at time: Double) -> CGRect {
+228:             let frame = self.frame(at: time)
+229:             let d = self.dematerialization.value(at: time)
+230:             let press = self.press.value(at: time)
+231:             let base = CGSize(width: frame.width * (1.0 + d * (self.maxScale.width - 1.0)) * press, height: frame.height * (1.0 + d * (self.maxScale.height - 1.0)) * pres
+232:             let pulse = self.pulse?.scale(at: time) ?? CGSize(width: 1.0, height: 1.0)
+233:             let anchor = self.pulse?.anchor ?? CGPoint(x: 0.5, y: 0.5)
+234:             let size = CGSize(width: base.width * pulse.width, height: base.height * pulse.height)
+235:             let fixed = CGPoint(x: frame.midX + (anchor.x - 0.5) * base.width, y: frame.midY + (anchor.y - 0.5) * base.height)
+236:             return CGRect(x: fixed.x - anchor.x * size.width, y: fixed.y - anchor.y * size.height, width: size.width, height: size.height)
+237:         }
+238: 
+239:         /// The transform that draws the shape's views (laid out at its frame) at `glassFrame`.
+240:         func drawingTransform(at time: Double) -> CGAffineTransform {
+241:             let frame = self.frame(at: time)
+242:             let glassFrame = self.glassFrame(at: time)
+243:             return CGAffineTransform(a: frame.width > 0.0 ? glassFrame.width / frame.width : 1.0, b: 0.0, c: 0.0, d: frame.height > 0.0 ? glassFrame.height / frame.height
+244:         }
+245: 
+246:         /// The glass's corner radius drawn at `size`, now.
+247:         func cornerRadius(size: CGSize, at time: Double) -> CGFloat {
+248:             return min(size.width, size.height) * 0.5 * max(0.0, self.roundness.value(at: time))
+249:         }
+250: 
+251:         func animateFrame(to frame: CGRect, spring: NavigationTransitionSpring, at time: Double) {
+252:             self.x = self.x.retargeted(at: time, to: frame.minX, spring: spring)
+253:             self.y = self.y.retargeted(at: time, to: frame.minY, spring: spring)
+254:             self.width = self.width.retargeted(at: time, to: frame.width, spring: spring)
+255:             self.height = self.height.retargeted(at: time, to: frame.height, spring: spring)
+256:         }
+257: 
+258:         /// When every curve of this capsule rests.
+259:         var restTime: Double {
+260:             var result = max(self.x.restTime, self.y.restTime, self.width.restTime, self.height.restTime, self.roundness.restTime, self.dematerialization.restTime, self.p
+261:             if let pulse = self.pulse {
+262:                 result = max(result, pulse.restTime)
+263:             }
+264:             if let kick = self.kick {
+265:                 result = max(result, kick.restTime)
+266:             }
+267:             for items in self.items {
+268:                 result = max(result, items.appearance.restTime, items.rideOffsetX.restTime, items.rideOffsetY.restTime)
+269:             }
+270:             return result
+271:         }
+272: 
+273:         /// Moves every curve onto a clock whose zero is this one's `time` (a new bake's origin).
+274:         func rebase(by time: Double) {
+275:             self.x = self.x.rebased(by: time)
+276:             self.y = self.y.rebased(by: time)
+277:             self.width = self.width.rebased(by: time)
+278:             self.height = self.height.rebased(by: time)
+279:             self.roundness = self.roundness.rebased(by: time)
+280:             self.dematerialization = self.dematerialization.rebased(by: time)
+281:             self.press = self.press.rebased(by: time)
+282:             self.glow = self.glow.rebased(by: time)
+283:             self.tintFade = self.tintFade.rebased(by: time)
+284:             self.pulse = self.pulse?.rebased(by: time)
+285:             self.kick = self.kick?.rebased(by: time)
+286:             for items in self.items {
+287:                 items.appearance = items.appearance.rebased(by: time)
+288:                 items.rideOffsetX = items.rideOffsetX.rebased(by: time)
+289:                 items.rideOffsetY = items.rideOffsetY.rebased(by: time)
+290:             }
+291:         }
+292: 
+293:         /// Every curve at its target (the group has come to rest).
+294:         func settle() {
+295:             func settled(_ curve: NavigationSpringCurve) -> NavigationSpringCurve {
+296:                 return .constant(curve.target, rest: curve.rest)
+297:             }
+298:             self.x = settled(self.x)
+299:             self.y = settled(self.y)
+300:             self.width = settled(self.width)
+301:             self.height = settled(self.height)
+302:             self.roundness = settled(self.roundness)
+303:             self.dematerialization = settled(self.dematerialization)
+304:             self.press = settled(self.press)
+305:             self.glow = settled(self.glow)
+306:             self.tintFade = settled(self.tintFade)
+307:             self.pulse = nil
+308:             self.kick = nil
+309:             for items in self.items {
+310:                 items.appearance = settled(items.appearance)
+311:                 items.rideOffsetX = settled(items.rideOffsetX)
+312:                 items.rideOffsetY = settled(items.rideOffsetY)
+313:             }
+314:         }
+315: 
+316:         var views: [UIView] {
+317:             return [self.container, self.fadingContainer, self.itemsHost].compactMap { $0 }
+318:         }
+319: 
+320:         func removeViews() {
+321:             for view in self.views {
+322:                 view.removeFromSuperview()
+323:             }
+324:             // The glass may be in the merged container rather than its own.
+325:             self.glass.removeFromSuperview()
+326:         }
+327:     }
+328: 
+329:     private struct SideLayout {
+330:         var frames: [Role: CGRect] = [:]
+331:         var itemViews: [Role: UIView] = [:]
+332:         var tints: [Role: GlassBackgroundView.TintColor] = [:]
+333:         /// A platter's `Platter.roundness`, where it is not 1.
+334:         var roundness: [Role: CGFloat] = [:]
+335:         var signatures: [Role: [AnyHashable]] = [:]
+336:         var isDark = false
+337:         /// The slot the bar's title pill takes, if it has one there.
+338:         var titlePillRole: Role?
+339:     }
+340: 
+341:     private let bottomContentView = NavigationBarContentView(backPressed: {})
+342:     private let topContentView = NavigationBarContentView(backPressed: {})
+343:     private var bottomLayout = SideLayout()
+344:     private var topLayout = SideLayout()
+345:     /// iPhone Duo: each bar's column back circle items with the unread badge the bar draws on the circle's corner, so
+346:     /// the badge materializes, morphs and swaps with the circle.
+347:     private var columnBackWrappers: [SideKind: UIView] = [:]
+348:     private var columnBadges: [SideKind: NavigationBarBadgeNode] = [:]
+349:     private var bottomSide: Side?
+350:     private var topSide: Side?
+351:     private var platters: [Role: Platter] = [:]
+352:     /// The container the right platters' glass merges in during a matched morph (`mergesGlass`), at the bar's platter
+353:     /// smoothness: created on first use, below every capsule's own views, spanning this view.
+354:     private var mergedGlassContainer: GlassBackgroundContainerView?
+355:     private var isInteractive = false
+356:     private var hasBegun = false
+357:     private var fromSide: SideKind = .bottom
+358:     private var toSide: SideKind = .top
+359:     /// The time the capsules' curves are evaluated at: the clock's animation time at each entry point, the bake's
+360:     /// end while a bake sets the model.
+361:     private var time: Double = 0.0
+362:     /// The clock the capsules' keyframes run on, their deadline its end.
+363:     private lazy var clock: NavigationAnimationClock = {
+364:         let clock = NavigationAnimationClock(hostView: self)
+365:         clock.ended = { [weak self] in
+366:             self?.clockEnded()
+367:         }
+368:         return clock
+369:     }()
+370:     var clockForTesting: NavigationAnimationClock {
+371:         return self.clock
+372:     }
+373:     var hasDisplayLinkForTesting: Bool {
+374:         return false
+375:     }
+376:     private static let keyPrefix = "navigationGlass."
+377:     /// Called once when the capsules come to rest after animating (not while a swipe holds them); a begin that animates
+378:     /// nothing reports nothing.
+379:     public var onSettled: (() -> Void)?
+380:     private var hasReportedSettled = true
 
-## GREP Regram network calls
--- Regram/RGAPI/Sources/RGAPI.swift:43
-           
-           var request = URLRequest(url: url)
--- Regram/RGAPI/Sources/RGAPI.swift:83
-           
-           var request = URLRequest(url: url)
--- Regram/RGAPI/Sources/RGAPI.swift:131
-           
-           var request = URLRequest(url: url)
--- Regram/RGGTranslate/Sources/RGExternalTranslateProviders.swift:37
-       }
-       var request = URLRequest(url: url)
--- Regram/RGGTranslate/Sources/RGExternalTranslateProviders.swift:88
-       }
-       var request = URLRequest(url: url)
--- Regram/RGGTranslate/Sources/RGExternalTranslateProviders.swift:115
-           }
-           var request = URLRequest(url: url)
--- Regram/RGGTranslate/Sources/RGExternalTranslateProviders.swift:140
-       }
-       var request = URLRequest(url: url)
--- Regram/RGGTranslate/Sources/RGExternalTranslateProviders.swift:172
-       let source = fromLang.flatMap { $0.isEmpty || $0 == "auto" ? nil : rgBaseLanguageCode($0) }
-       var request = URLRequest(url: url)
--- Regram/RGGTranslate/Sources/RGExternalTranslateProviders.swift:216
-       }
-       var request = URLRequest(url: url)
--- Regram/RGGTranslate/Sources/RGGTranslate.swift:9
+## GREP story list creation
+
+## GREP story hiding flags
+-- Regram/RGStrings/Sources/RGSettingsCatalog.swift:116
+           .init("settings.profiles", "confirmCalls", "Settings.CallConfirmation"),
+           .init("settings.stories", "hideStories", "Settings.Stories.Hide"),
+           .init("settings.stories", "disableSwipeToRecordStory", "Settings.Stories.DisableSwipeToRecord"),
+-- Regram/RGSimpleSettings/Sources/RGChatFeatures.swift:153
+       var communityAvatarTapActionValue: RGFeatureCommunityAvatarTapAction { RGFeatureCommunityAvatarTapAction(rawValue: communityAvatarTapAction) ?? .c
+       var disableStoryCameraSwipeEffective: Bool { hideStories || disableSwipeToRecordStory }
+       var disableChatAvatarStoriesEffective: Bool { hideStories || disableChatAvatarStories }
+-- Regram/RGSimpleSettings/Sources/RGChatFeatures.swift:154
+       var disableStoryCameraSwipeEffective: Bool { hideStories || disableSwipeToRecordStory }
+       var disableChatAvatarStoriesEffective: Bool { hideStories || disableChatAvatarStories }
+       func chatListStartupSpecificFolderId(accountPeerId: Int64) -> Int32? {
+-- Regram/RGSimpleSettings/Sources/SettingsBackup.swift:94
+       public static let categoryKeys: [RGBackupCategory: [String]] = [
+           .appearance: ["bottomBarLayout", "showTabNames", "fontFamily", "fontChineseFamily", "fontImportedLatin", "fontImportedChinese", "fontApplyToMe
+           .messages: ["messageSummaryEnabled", "contextShowSelectFromUser", "contextShowSaveToCloud", "contextShowRestrict", "contextShowHideForwardName
+-- Regram/RGSimpleSettings/Sources/SimpleSettings.swift:293
+           case tabBarSearchEnabled
+           case hideStories
+           case disableAllAds
+-- Regram/RGSimpleSettings/Sources/SimpleSettings.swift:539
+           Keys.tabBarSearchEnabled.rawValue: true,
+           Keys.hideStories.rawValue: false,
+           Keys.disableAllAds.rawValue: false,
+-- Regram/RGSimpleSettings/Sources/SimpleSettings.swift:699
    
-   private let rgTranslateSessionConfiguration: URLSessionConfiguration = .ephemeral
--- Regram/RGGTranslate/Sources/RGGTranslate.swift:10
-   private let rgTranslateSessionConfiguration: URLSessionConfiguration = .ephemeral
-   private let rgTranslateSession: URLSession = URLSession(configuration: rgTranslateSessionConfiguration)
--- Regram/RGGTranslate/Sources/RGGTranslate.swift:36
-           let completed: Atomic<Bool> = Atomic(value: false)
-           let downloadTask: URLSessionDataTask = rgTranslateSession.dataTask(with: request, completionHandler: { data, response, _ in
--- Regram/RGGTranslate/Sources/RGGTranslate.swift:56
-   private func rgTranslateRequestData(url: URL, userAgent: String) -> Signal<Data, TranslateFetchError> {
-       var request: URLRequest = URLRequest(url: url)
--- Regram/RGGTranslate/Sources/RGLLMTranslate.swift:201
+       @UserDefault(key: Keys.hideStories.rawValue)
+       public var hideStories: Bool
+-- Regram/RGSimpleSettings/Sources/SimpleSettings.swift:700
+       @UserDefault(key: Keys.hideStories.rawValue)
+       public var hideStories: Bool
    
-   private let rgLLMSession: URLSession = URLSession(configuration: .ephemeral)
--- Regram/RGGTranslate/Sources/RGLLMTranslate.swift:336
-       }
-       var request = URLRequest(url: url)
--- Regram/RGGTranslate/Sources/RGLLMTranslate.swift:462
-       }
-       var request = URLRequest(url: url)
--- Regram/RGTypography/Sources/RGFontStore.swift:51
-       private var progressObservation: NSKeyValueObservation?
-       private var activeTask: URLSessionDownloadTask?
--- Regram/RGTypography/Sources/RGFontStore.swift:111
-           return try await withCheckedThrowingContinuation { continuation in
-                   let task = URLSession.shared.downloadTask(with: url) { temporary, response, error in
--- Regram/RGTranscription/Sources/RGOpenAITranscriptionProvider.swift:108
-                       }
-                       var request = URLRequest(url: configuration.url)
--- Regram/RGTranscription/Sources/RGOpenAITranscriptionProvider.swift:116
-                       }
-                       let sessionConfiguration = URLSessionConfiguration.ephemeral
--- Regram/RGTranscription/Sources/RGOpenAITranscriptionProvider.swift:118
-                       sessionConfiguration.timeoutIntervalForResource = 180
-                       let session = URLSession(configuration: sessionConfiguration, delegate: RGSTTRedirectDelegate(), delegateQueue: nil)
--- Regram/RGTranscription/Sources/RGOpenAITranscriptionProvider.swift:157
-   
-   private final class RGSTTRedirectDelegate: NSObject, URLSessionTaskDelegate {
--- Regram/RGTranscription/Sources/RGOpenAITranscriptionProvider.swift:158
-   private final class RGSTTRedirectDelegate: NSObject, URLSessionTaskDelegate {
-       func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
--- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:11
-   
-   private final class RGUpdateNetworkDelegate: NSObject, URLSessionTaskDelegate, URLSessionDataDelegate, @unchecked Sendable {
--- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:15
-       init(service: URL?, maximumSize: Int64) { self.service = service; self.maximumSize = maximumSize }
-       func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
--- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:26
-       }
-       func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.Re
--- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:375
-                   defer { session.invalidateAndCancel() }
-                   var request = URLRequest(url: URL(string: "https://api.github.com/repos/RegramDev/Regram-ios/releases/latest")!)
--- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:613
-                       do {
-                           var request = URLRequest(url: node.baseURL.appendingPathComponent("ota/manifest"))
--- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:801
-   
-       private func makeSession(_ delegate: RGUpdateNetworkDelegate) -> URLSession {
--- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:802
-       private func makeSession(_ delegate: RGUpdateNetworkDelegate) -> URLSession {
-           return URLSession(configuration: networkConfiguration(), delegate: delegate, delegateQueue: nil)
--- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:805
-   
-       private func networkConfiguration() -> URLSessionConfiguration {
--- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:806
-       private func networkConfiguration() -> URLSessionConfiguration {
-           let config = URLSessionConfiguration.ephemeral
--- Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift:4
-   
-   final class RGUpdateBackgroundDownload: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
--- Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift:17
-       private var package: URL { directory.appendingPathComponent("incoming.ipa") }
-       private var session: URLSession?
--- Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift:18
-       private var session: URLSession?
-       private var task: URLSessionDownloadTask?
--- Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift:39
-   
-       private func getSession() -> URLSession {
--- Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift:41
-           if let session { return session }
-           let configuration = URLSessionConfiguration.background(withIdentifier: Self.identifier)
--- Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift:45
-           configuration.httpCookieStorage = nil; configuration.urlCredentialStorage = nil
-           let session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
--- Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift:77
-                           if self.job?.complete == true { self.complete(.success(self.package)); return }
-                           let matches = tasks.compactMap { $0 as? URLSessionDownloadTask }.filter { $0.originalRequest?.url == release.downloadURL && $0
--- Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift:137
-   
-       func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalByte
+-- Regram/RGSettingsUI/Sources/RGGroupMemberSettingsController.swift:160
+                   if let value = peerMap[id], let peer = value { return peer }
+                   return EnginePeer.user(TelegramUser(id: id, accessHash: nil, firstName: "ID \(id.id._internalGetInt64Value())", lastName: nil, usernam
+               }.sorted { $0.compactDisplayTitle.localizedCaseInsensitiveCompare($1.compactDisplayTitle) == .orderedAscending }
+-- Regram/RGSettingsUI/Sources/RGSettingsController.swift:87
+       case startTelescopeWithRearCam
+       case hideStories
+       case uploadSpeedBoost
+-- Regram/RGSettingsUI/Sources/RGSettingsController.swift:262
+       entries.append(.header(id: id.count, section: .stories, text: strings.AutoDownloadSettings_Stories.uppercased(), badge: nil))
+       entries.append(.toggle(id: id.count, section: .stories, settingName: .hideStories, value: RGSimpleSettings.shared.hideStories, text: i18n("Setting
+       entries.append(.toggle(id: id.count, section: .stories, settingName: .disableSwipeToRecordStory, value: RGSimpleSettings.shared.disableSwipeToReco
+-- Regram/RGSettingsUI/Sources/RGSettingsController.swift:520
+               RGSimpleSettings.shared.startTelescopeWithRearCam = value
+           case .hideStories:
+               RGSimpleSettings.shared.hideStories = value
+-- Regram/RGSettingsUI/Sources/RGSettingsController.swift:521
+           case .hideStories:
+               RGSimpleSettings.shared.hideStories = value
+           case .showProfileId:
+-- Regram/RGProUI/Sources/RGHiddenUsersController.swift:129
+   private func rgPlaceholderPeer(id: EnginePeer.Id, title: String) -> EnginePeer {
+       return .user(TelegramUser(id: id, accessHash: nil, firstName: title, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictio
+   }
+-- Telegram/SiriIntentsTests/IntentMessageFixtures.swift:22
+               usernames: [],
+               storiesHidden: nil,
+               nameColor: nil,
+-- Telegram/SiriIntentsTests/IntentMessageFixtures.swift:65
+               usernames: [],
+               storiesHidden: nil,
+               nameColor: nil,
+-- submodules/AccountUtils/Sources/AccountUtils.swift:21
+               |> map { view, totalUnreadCount -> (EnginePeer?, Int32) in
+                   return (view.peers[view.peerId].flatMap(EnginePeer.init) ?? EnginePeer.init(TelegramUser(id: view.peerId, accessHash: nil, firstName: 
+               }
+-- submodules/ChatListUI/Sources/ChatListController.swift:2306
+                   // MARK: Regram
+                   let hideStoriesSignal = combineLatest(rgSimpleSettingsBoolSignal(.hideStories, defaultValue: false), rgFeatureBoolSignal("features.hid
+                   
+-- submodules/ChatListUI/Sources/ChatListController.swift:2308
+                   
+                   self.storySubscriptionsDisposable = (combineLatest(self.context.engine.messages.storySubscriptions(isHidden: self.location == .chatLis
+                   |> deliverOnMainQueue).startStrict(next: { [weak self] rawStorySubscriptions, hideStories in
+-- submodules/ChatListUI/Sources/ChatListController.swift:2309
+                   self.storySubscriptionsDisposable = (combineLatest(self.context.engine.messages.storySubscriptions(isHidden: self.location == .chatLis
+                   |> deliverOnMainQueue).startStrict(next: { [weak self] rawStorySubscriptions, hideStories in
+                       guard let self else {
 ...cut
 
-## Regram/RGAppUpdate files
-814  Regram/RGAppUpdate/Sources/RGAppUpdater.swift
-66  Regram/RGAppUpdate/Sources/RGLCSignInstallation.swift
-157  Regram/RGAppUpdate/Sources/RGLocalUpdateServer.swift
-37  Regram/RGAppUpdate/Sources/RGTrollStoreInstallation.swift
-185  Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift
-155  Regram/RGAppUpdate/Sources/RGUpdateCache.swift
-47  Regram/RGAppUpdate/Sources/RGUpdateCredentialFile.swift
-23  Regram/RGAppUpdate/Sources/RGUpdateDeliveryTracker.swift
-99  Regram/RGAppUpdate/Sources/RGUpdateDownload.swift
-21  Regram/RGAppUpdate/Sources/RGUpdateIdentity.swift
-33  Regram/RGAppUpdate/Sources/RGUpdateKeychain.swift
-93  Regram/RGAppUpdate/Sources/RGUpdateLiveActivity.swift
-24  Regram/RGAppUpdate/Sources/RGUpdatePrompt.swift
-114  Regram/RGAppUpdate/Sources/RGUpdateRelease.swift
-23  Regram/RGAppUpdate/Sources/RGUpdateSettingsLink.swift
-100  Regram/RGAppUpdate/Tests/BackgroundDownloadTests.swift
-43  Regram/RGAppUpdate/Tests/BackgroundDownloadTransport.swift
-31  Regram/RGAppUpdate/Tests/CredentialFileTests.swift
-65  Regram/RGAppUpdate/Tests/CredentialPersistenceHost.swift
-64  Regram/RGAppUpdate/Tests/DownloadProgressTests.swift
-38  Regram/RGAppUpdate/Tests/LiveActivityKitFixture.swift
-73  Regram/RGAppUpdate/Tests/LiveActivityTests.swift
-87  Regram/RGAppUpdate/Tests/LocalUpdateServerTests.swift
-24  Regram/RGAppUpdate/Tests/TrollStoreInstallationTests.swift
-98  Regram/RGAppUpdate/Tests/UpdateCacheTests.swift
-21  Regram/RGAppUpdate/Tests/UpdateDeliveryTrackerTests.swift
-33  Regram/RGAppUpdate/Tests/UpdatePromptTests.swift
-73  Regram/RGAppUpdate/Tests/UpdateReleaseTests.swift
+## GREP RGAppUpdater call sites
+-- submodules/TelegramUI/Sources/AppDelegate.swift:478
+               self.rgLaunchResetCoordinator = resetCoordinator
+               RGAppUpdater.cancelForDataReset()
+               return true
+           }
+-- submodules/TelegramUI/Sources/AppDelegate.swift:481
+           }
+           RGAppUpdater.shared.start()
+           //
+   
+-- submodules/TelegramUI/Sources/AppDelegate.swift:1505
+                       // MARK: Regram — a prompt emitted before the account root mounted must not be lost.
+                       Task { @MainActor in RGAppUpdater.shared.refreshPrompt() }
+                       
+                       #if DEBUG
+-- submodules/TelegramUI/Sources/AppDelegate.swift:3473
+           if self.rgLaunchResetCoordinator != nil {
+               RGAppUpdater.cancelForDataReset()
+               completionHandler()
+               return
+-- submodules/TelegramUI/Sources/AppDelegate.swift:3477
+           }
+           if RGAppUpdater.shared.handleBackgroundDownloadEvents(identifier: identifier, completion: completionHandler) { return }
+           completionHandler()
+       }
+-- submodules/TelegramUI/Sources/ApplicationContext.swift:632
+                         let source = self.rootController.viewControllers.last as? ViewController,
+                         RGAppUpdater.shared.claimPrompt(prompt) else { return }
+                   let updater = RGAppUpdater.shared
+                   let data = self.context.sharedContext.currentPresentationData.with { $0 }
+-- submodules/TelegramUI/Sources/ApplicationContext.swift:633
+                         RGAppUpdater.shared.claimPrompt(prompt) else { return }
+                   let updater = RGAppUpdater.shared
+                   let data = self.context.sharedContext.currentPresentationData.with { $0 }
+                   let lang = data.strings.rgLanguageCode
