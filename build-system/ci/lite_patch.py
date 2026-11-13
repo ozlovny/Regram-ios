@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Облегчающие патчи Regram (v2): стекло без размытия, быстрые анимации, без предзагрузок, экономная сеть.
+"""Облегчающие патчи Regram (v3): стекло без размытия, быстрые анимации, без предзагрузок, экономная сеть.
 Запускается из корня репозитория перед сборкой. Обязательные патчи при неудаче валят шаг сразу (дёшево),
 необязательные только печатают предупреждение."""
 import re
@@ -74,7 +74,7 @@ patch_file("submodules/TelegramUIPreferences/Sources/MediaAutoDownloadSettings.s
 # 2. «Жидкое стекло» на iOS < 26: без живого размытия фона и без маски яркости (оба дорогие для GPU)
 patch_file(UI + "Components/GlassBackgroundComponent/Sources/GlassBackgroundComponent.swift", [
     ("glass: backdrop blur off", rx(r"legacyView\.update\(size: size, shape: shape, style: style, transition: transition\)",
-                                    "legacyView.isHidden = true // lite: no backdrop blur"), True),
+                                    "_ = style; legacyView.isHidden = true // lite: no backdrop blur"), True),
     ("glass: luminance mask off", rx(r"foregroundView\.mask = self\.maskContainerView", "// lite: no luminance mask"), True),
 ])
 
@@ -102,14 +102,16 @@ if not found:
     print("[lite] warn: animationDurationFactorImpl definition not found or already patched")
 
 # 5. Сеть: фоновые менеджеры предзагрузки отключены
+# Условие всегда истинно, но компилятор этого не видит: нет предупреждения «недостижимый код» (оно здесь = ошибка).
+OFF = "\\1\n        if CommandLine.arguments.count >= 0 { return } // lite: %s"
 patch_file("submodules/TelegramCore/Sources/State/ChatHistoryPreloadManager.swift", [
-    ("history preload off", rx(r"(func start\(\)\s*\{)", "\\1\n        return // lite: preload off"), False),
+    ("history preload off", rx(r"(func start\(\)\s*\{)", OFF % "preload off"), False),
 ])
 patch_file(UI + "Sources/PrefetchManager.swift", [
-    ("media prefetch off", rx(r"(private func updateOrderedPreloadMedia\([^\n{]*\)\s*\{)", "\\1\n        return // lite: prefetch off"), False),
+    ("media prefetch off", rx(r"(private func updateOrderedPreloadMedia\([^\n{]*\)\s*\{)", OFF % "prefetch off"), False),
 ])
 patch_file(UI + "Sources/InChatPrefetchManager.swift", [
-    ("in-chat prefetch off", rx(r"(private func update\(\)\s*\{)", "\\1\n        return // lite: prefetch off"), False),
+    ("in-chat prefetch off", rx(r"(private func update\(\)\s*\{)", OFF % "prefetch off"), False),
 ])
 
 if errors:
