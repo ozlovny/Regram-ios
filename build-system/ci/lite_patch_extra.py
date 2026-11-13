@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 MARK = "// REGRAM-LITE-EXTRA patched"
-ANIM_FACTOR = "0.3"  # множитель длительности анимаций Display (1.0 = без изменений, меньше = быстрее)
+ANIM_FACTOR = "0.5"  # множитель длительности анимаций Display (1.0 = без изменений, меньше = быстрее)
 errors = []
 
 
