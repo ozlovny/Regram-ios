@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Выписывает ключевые куски кода в reports/lite-dump.txt (v2). Ничего не меняет."""
+"""Выписывает ключевые куски кода в reports/lite-dump.txt (v3). Ничего не меняет."""
 import os
 import re
 from pathlib import Path
@@ -79,28 +79,19 @@ def grep(regex, ctx, cap, label, only=None):
     out()
 
 
-# 1. Как приложение классифицирует мощность устройства
-grep(r"var isGraphicallyCapable|isGraphicallyCapable\s*:|static (var|let) performance", 10, 12, "device performance classes")
-# 2. Где создаются тяжёлые Metal-слои и «линза»
-grep(r"LiquidGlassShapesLayer\(", 3, 15, "LiquidGlassShapesLayer creation")
-grep(r"LiquidLensView\(", 3, 15, "LiquidLensView creation")
-grep(r"MetalEngine\.shared|MetalEngine\(", 2, 10, "MetalEngine")
-outline("submodules/TelegramUI/Components/LiquidLens/Sources/LiquidLensView.swift")
-# 3. Где реально используется множитель анимаций Display
-grep(r"animationDurationFactor\(\)", 1, 40, "Display animationDurationFactor use", only="submodules/Display")
-# 4. Переходы навигации
-outline("submodules/Display/Source/NavigationController.swift")
-grep(r"animated\(duration:\s*0\.[3-9]", 1, 25, "navigation durations", only="submodules/Display/Source")
-# 5. Запуск приложения
-outline("submodules/TelegramUI/Sources/AppDelegate.swift")
-grep(r"asyncAfter|Timer\.scheduledTimer|\.after\(", 2, 25, "startup delays/timers", only="submodules/TelegramUI/Sources")
-# 6. Истории и сервисы Regram
-full("build-system/check-regram-story-flags.py", 120)
-grep(r"URLSession|URLRequest\(", 1, 40, "Regram network calls", only="Regram")
-out("## Regram/RGAppUpdate files")
-for f in sorted(Path("Regram/RGAppUpdate").rglob("*.swift"))[:30] if Path("Regram/RGAppUpdate").exists() else []:
-    out(f"{len(f.read_text(errors='ignore').splitlines())}  {f}")
-out()
+# 1. Где ещё включаются «мощные» ветки кода
+grep(r"isGraphicallyCapable", 2, 40, "isGraphicallyCapable uses")
+# 2. Нижняя панель и линза: самые тяжёлые элементы на главном экране
+full("submodules/TelegramUI/Components/LiquidLens/Sources/LiquidLensView.swift", 820)
+grep(r"UIVisualEffectView|liquidLensView|GlassBackground", 2, 25, "TabBar glass/lens", only="submodules/TelegramUI/Components/TabBarComponent")
+outline("submodules/TelegramUI/Components/GlassBarButtonComponent/Sources/GlassBarButtonComponent.swift")
+# 3. Переходы навигационной панели
+full("submodules/TelegramUI/Components/NavigationBarComponent/Sources/NavigationBarPlatterTransitionView.swift", 380)
+# 4. Истории в списке чатов
+grep(r"StoryPeerListComponent\(", 3, 10, "story list creation", only="submodules/ChatListUI")
+grep(r"hideStories|isStoryListHidden|storiesHidden|hiddenStories|storyListHidden", 2, 20, "story hiding flags")
+# 5. Обновления Regram: откуда вызывается
+grep(r"RGAppUpdater", 3, 20, "RGAppUpdater call sites", only="submodules/TelegramUI")
 
 OUT.write_text("\n".join(buf), encoding="utf-8")
 print(f"written {OUT}, {len(buf)} lines")
