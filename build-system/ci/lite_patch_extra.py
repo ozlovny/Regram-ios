@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 MARK = "// REGRAM-LITE-EXTRA patched"
-ANIM_FACTOR = "0.6"  # множитель длительности анимаций Display (1.0 = без изменений, меньше = быстрее)
+ANIM_FACTOR = "0.9"  # множитель длительности анимаций Display (1.0 = без изменений, меньше = быстрее)
 errors = []
 # Условие всегда истинно, но компилятор этого не видит: нет предупреждения «недостижимый код» (здесь оно = ошибка).
 EARLY_RETURN = "\\1\n        if CommandLine.arguments.count >= 0 { return } // lite"
