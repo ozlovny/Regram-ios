@@ -1,1429 +1,805 @@
-## FULL submodules/TelegramUI/Components/GlassBackgroundComponent/Sources/GlassBackgroundComponent.swift (2146 lines, showing 900)
-1: import Foundation
-2: import UIKit
-3: import Display
-4: import ComponentFlow
-5: import ComponentDisplayAdapters
-6: import UIKitRuntimeUtils
-7: import CoreImage
-8: import AppBundle
-9: 
-10: private final class ContentContainer: UIView {
-11:     private let maskContentView: UIView
-12:     
-13:     init(maskContentView: UIView) {
-14:         self.maskContentView = maskContentView
-15:         
-16:         super.init(frame: CGRect())
-17:     }
-18:     
-19:     required public init?(coder: NSCoder) {
-20:         fatalError("init(coder:) has not been implemented")
-21:     }
-22:     
-23:     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-24:         guard let result = super.hitTest(point, with: event) else {
-25:             return nil
-26:         }
-27:         if result === self {
-28:             if let gestureRecognizers = self.gestureRecognizers, !gestureRecognizers.isEmpty {
-29:                 return result
-30:             }
-31:             return nil
-32:         }
-33:         return result
-34:     }
-35:     
-36:     override func didAddSubview(_ subview: UIView) {
-37:         super.didAddSubview(subview)
-38:         
-39:         if let subview = subview as? GlassBackgroundView.ContentView {
-40:             self.maskContentView.addSubview(subview.tintMask)
-41:         }
-42:     }
-43:     
-44:     override func willRemoveSubview(_ subview: UIView) {
-45:         super.willRemoveSubview(subview)
-46:         
-47:         if let subview = subview as? GlassBackgroundView.ContentView {
-48:             subview.tintMask.removeFromSuperview()
-49:         }
-50:     }
-51: }
-52: 
-53: public class GlassBackgroundView: UIView {
-54:     public protocol ContentView: UIView {
-55:         var tintMask: UIView { get }
-56:     }
-57:     
-58:     open class ContentLayer: SimpleLayer {
-59:         public var targetLayer: CALayer?
-60:         
-61:         override init() {
-62:             super.init()
-63:         }
-64:         
-65:         override init(layer: Any) {
-66:             super.init(layer: layer)
-67:         }
-68:         
-69:         required public init?(coder: NSCoder) {
-70:             fatalError("init(coder:) has not been implemented")
-71:         }
-72:         
-73:         override public var position: CGPoint {
-74:             get {
-75:                 return super.position
-76:             } set(value) {
-77:                 if let targetLayer = self.targetLayer {
-78:                     targetLayer.position = value
-79:                 }
-80:                 super.position = value
-81:             }
-82:         }
-83:         
-84:         override public var bounds: CGRect {
-85:             get {
-86:                 return super.bounds
-87:             } set(value) {
-88:                 if let targetLayer = self.targetLayer {
-89:                     targetLayer.bounds = value
-90:                 }
-91:                 super.bounds = value
-92:             }
-93:         }
-94:         
-95:         override public var anchorPoint: CGPoint {
-96:             get {
-97:                 return super.anchorPoint
-98:             } set(value) {
-99:                 if let targetLayer = self.targetLayer {
-100:                     targetLayer.anchorPoint = value
-101:                 }
-102:                 super.anchorPoint = value
-103:             }
-104:         }
-105:         
-106:         override public var anchorPointZ: CGFloat {
-107:             get {
-108:                 return super.anchorPointZ
-109:             } set(value) {
-110:                 if let targetLayer = self.targetLayer {
-111:                     targetLayer.anchorPointZ = value
-112:                 }
-113:                 super.anchorPointZ = value
-114:             }
-115:         }
-116:         
-117:         override public var opacity: Float {
-118:             get {
-119:                 return super.opacity
-120:             } set(value) {
-121:                 if let targetLayer = self.targetLayer {
-122:                     targetLayer.opacity = value
-123:                 }
-124:                 super.opacity = value
-125:             }
-126:         }
-127:         
-128:         override public var sublayerTransform: CATransform3D {
-129:             get {
-130:                 return super.sublayerTransform
-131:             } set(value) {
-132:                 if let targetLayer = self.targetLayer {
-133:                     targetLayer.sublayerTransform = value
-134:                 }
-135:                 super.sublayerTransform = value
-136:             }
-137:         }
-138:         
-139:         override public var transform: CATransform3D {
-140:             get {
-141:                 return super.transform
-142:             } set(value) {
-143:                 if let targetLayer = self.targetLayer {
-144:                     targetLayer.transform = value
-145:                 }
-146:                 super.transform = value
-147:             }
-148:         }
-149:         
-150:         override public func add(_ animation: CAAnimation, forKey key: String?) {
-151:             if let targetLayer = self.targetLayer {
-152:                 targetLayer.add(animation, forKey: key)
-153:             }
-154:             
-155:             super.add(animation, forKey: key)
-156:         }
-157:         
-158:         override public func removeAllAnimations() {
-159:             if let targetLayer = self.targetLayer {
-160:                 targetLayer.removeAllAnimations()
-161:             }
-162:             
-163:             super.removeAllAnimations()
-164:         }
-165:         
-166:         override public func removeAnimation(forKey: String) {
-167:             if let targetLayer = self.targetLayer {
-168:                 targetLayer.removeAnimation(forKey: forKey)
-169:             }
-170:             
-171:             super.removeAnimation(forKey: forKey)
-172:         }
-173:     }
-174:     
-175:     public final class ContentColorView: UIView, ContentView {
-176:         override public static var layerClass: AnyClass {
-177:             return ContentLayer.self
-178:         }
-179:         
-180:         public let tintMask: UIView
-181:         
-182:         override public init(frame: CGRect) {
-183:             self.tintMask = UIView()
-184:             
-185:             super.init(frame: CGRect())
-186:             
-187:             self.tintMask.tintColor = .black
-188:         }
-189:         
-190:         required public init?(coder: NSCoder) {
-191:             fatalError("init(coder:) has not been implemented")
-192:         }
-193:     }
-194:     
-195:     public final class ContentImageView: UIImageView, ContentView {
-196:         override public static var layerClass: AnyClass {
-197:             return ContentLayer.self
-198:         }
-199:         
-200:         private let tintImageView: UIImageView
-201:         public var tintMask: UIView {
-202:             return self.tintImageView
-203:         }
-204:         
-205:         override public var image: UIImage? {
-206:             didSet {
-207:                 self.tintImageView.image = self.image
-208:             }
-209:         }
-210:         
-211:         override public var tintColor: UIColor? {
-212:             didSet {
-213:                 if self.tintColor != oldValue {
-214:                     self.setMonochromaticEffect(tintColor: self.tintColor)
-215:                 }
-216:             }
-217:         }
-218:         
-219:         override public init(frame: CGRect) {
-220:             self.tintImageView = UIImageView()
-221:             
-222:             super.init(frame: CGRect())
-223:             
-224:             self.tintImageView.tintColor = .black
-225:         }
-226:         
-227:         override public init(image: UIImage?) {
-228:             self.tintImageView = UIImageView()
-229:             
-230:             super.init(image: image)
-231:             
-232:             self.tintImageView.image = image
-233:             self.tintImageView.tintColor = .black
-234:         }
-235:         
-236:         override public init(image: UIImage?, highlightedImage: UIImage?) {
-237:             self.tintImageView = UIImageView()
-238:             
-239:             super.init(image: image, highlightedImage: highlightedImage)
-240:             
-241:             self.tintImageView.image = image
-242:             self.tintImageView.tintColor = .black
-243:         }
-244:         
-245:         required public init?(coder: NSCoder) {
-246:             fatalError("init(coder:) has not been implemented")
-247:         }
-248:     }
-249:     
-250:     public struct TintColor: Equatable {
-251:         public enum CustomStyle {
-252:             case `default`
-253:             case clear
-254:         }
-255:         
-256:         public enum Kind: Equatable {
-257:             case panel
-258:             /// UIKit's own regular glass with no tint (`UIGlassEffect(style: .regular)`), as the iOS 27 tab bar
-259:             /// uses. The custom implementation draws it as `panel`.
-260:             case untinted
-261:             case clear
-262:             case custom(style: CustomStyle, color: UIColor)
-263:         }
-264:         
-265:         public let kind: Kind
-266:         public let innerColor: UIColor?
-267:         public let innerInset: CGFloat
-268:         
-269:         public init(kind: Kind, innerColor: UIColor? = nil, innerInset: CGFloat = 3.0) {
-270:             self.kind = kind
-271:             self.innerColor = innerColor
-272:             self.innerInset = innerInset
-273:         }
-274: 
-275:         /// The native glass effect this tint gives: whether its style is `.clear` (else `.regular`), and its tint color.
-276:         func nativeEffect(isDark: Bool) -> (isClear: Bool, color: UIColor?) {
-277:             switch self.kind {
-278:             case .panel:
-279:                 return (false, UIColor(white: 1.0, alpha: isDark ? 0.025 : 0.1))
-280:             case .untinted:
-281:                 return (false, nil)
-282:             case let .custom(style, color):
-283:                 return (style == .clear, color)
-284:             case .clear:
-285:                 return (true, isDark ? UIColor(white: 0.0, alpha: 0.28) : nil)
-286:             }
-287:         }
-288: 
-289:         /// The native glass tint `fraction` of the way from `from` to `to`, as one effect: their tint colors mixed when
-290:         /// their styles match, else `to` from halfway. For native glass only: the custom glass draws a panel otherwise.
-291:         public static func blended(from: TintColor, to: TintColor, fraction: CGFloat, isDark: Bool) -> TintColor {
-292:             if fraction <= 0.0 {
-293:                 return from
-294:             }
-295:             if fraction >= 1.0 {
-296:                 return to
-297:             }
-298:             let start = from.nativeEffect(isDark: isDark)
-299:             let end = to.nativeEffect(isDark: isDark)
-300:             guard start.isClear == end.isClear, let startColor = start.color ?? end.color?.withAlphaComponent(0.0), let endColor = end.color ?? start.color?.withAlphaComp
-301:                 return fraction < 0.5 ? from : to
-302:             }
-303:             var r0: CGFloat = 0.0, g0: CGFloat = 0.0, b0: CGFloat = 0.0, a0: CGFloat = 0.0
-304:             var r1: CGFloat = 0.0, g1: CGFloat = 0.0, b1: CGFloat = 0.0, a1: CGFloat = 0.0
-305:             startColor.getRed(&r0, green: &g0, blue: &b0, alpha: &a0)
-306:             endColor.getRed(&r1, green: &g1, blue: &b1, alpha: &a1)
-307:             let color = UIColor(red: r0 + (r1 - r0) * fraction, green: g0 + (g1 - g0) * fraction, blue: b0 + (b1 - b0) * fraction, alpha: a0 + (a1 - a0) * fraction)
-308:             return TintColor(kind: .custom(style: start.isClear ? .clear : .default, color: color), innerColor: to.innerColor, innerInset: to.innerInset)
-309:         }
-310:     }
-311:     
-312:     public struct CornerRadii: Equatable {
-313:         public let topLeft: CGFloat
-314:         public let topRight: CGFloat
-315:         public let bottomLeft: CGFloat
-316:         public let bottomRight: CGFloat
-317: 
-318:         public init(topLeft: CGFloat, topRight: CGFloat, bottomLeft: CGFloat, bottomRight: CGFloat) {
-319:             self.topLeft = topLeft
-320:             self.topRight = topRight
-321:             self.bottomLeft = bottomLeft
-322:             self.bottomRight = bottomRight
-323:         }
-324: 
-325:         public init(radius: CGFloat) {
-326:             self.init(topLeft: radius, topRight: radius, bottomLeft: radius, bottomRight: radius)
-327:         }
-328: 
-329:         fileprivate func insetBy(_ value: CGFloat) -> CornerRadii {
-330:             return CornerRadii(
-331:                 topLeft: max(0.0, self.topLeft - value),
-332:                 topRight: max(0.0, self.topRight - value),
-333:                 bottomLeft: max(0.0, self.bottomLeft - value),
-334:                 bottomRight: max(0.0, self.bottomRight - value)
-335:             )
-336:         }
-337: 
-338:         fileprivate var maximum: CGFloat {
-339:             return max(max(self.topLeft, self.topRight), max(self.bottomLeft, self.bottomRight))
-340:         }
-341:     }
-342: 
-343:     public enum Shape: Equatable {
-344:         case roundedRect(cornerRadius: CGFloat)
-345:         case customRoundedRect(cornerRadii: CornerRadii)
-346: 
-347:         fileprivate func cornerRadii(for size: CGSize) -> CornerRadii {
-348:             switch self {
-349:             case let .roundedRect(cornerRadius):
-350:                 return GlassBackgroundView.clampedCornerRadii(size: size, cornerRadii: CornerRadii(radius: cornerRadius))
-351:             case let .customRoundedRect(cornerRadii):
-352:                 return GlassBackgroundView.clampedCornerRadii(size: size, cornerRadii: cornerRadii)
-353:             }
-354:         }
-355: 
-356:         func maximumCornerRadius(for size: CGSize) -> CGFloat {
-357:             return self.cornerRadii(for: size).maximum
-358:         }
-359:     }
-360: 
-361:     static func clampedCornerRadii(size: CGSize, cornerRadii: CornerRadii) -> CornerRadii {
-362:         let size = CGSize(width: max(0.0, size.width), height: max(0.0, size.height))
-363:         var cornerRadii = CornerRadii(
-364:             topLeft: max(0.0, cornerRadii.topLeft),
-365:             topRight: max(0.0, cornerRadii.topRight),
-366:             bottomLeft: max(0.0, cornerRadii.bottomLeft),
-367:             bottomRight: max(0.0, cornerRadii.bottomRight)
-368:         )
-369: 
-370:         func scaleFor(edgeLength: CGFloat, _ lhs: CGFloat, _ rhs: CGFloat) -> CGFloat {
-371:             let sum = lhs + rhs
-372:             if sum <= edgeLength || sum.isZero {
-373:                 return 1.0
-374:             }
-375:             return edgeLength / sum
-376:         }
-377: 
-378:         let scale = min(
-379:             1.0,
-380:             scaleFor(edgeLength: size.width, cornerRadii.topLeft, cornerRadii.topRight),
-381:             scaleFor(edgeLength: size.width, cornerRadii.bottomLeft, cornerRadii.bottomRight),
-382:             scaleFor(edgeLength: size.height, cornerRadii.topLeft, cornerRadii.bottomLeft),
-383:             scaleFor(edgeLength: size.height, cornerRadii.topRight, cornerRadii.bottomRight)
-384:         )
-385: 
-386:         if scale < 1.0 {
-387:             cornerRadii = CornerRadii(
-388:                 topLeft: cornerRadii.topLeft * scale,
-389:                 topRight: cornerRadii.topRight * scale,
-390:                 bottomLeft: cornerRadii.bottomLeft * scale,
-391:                 bottomRight: cornerRadii.bottomRight * scale
-392:             )
-393:         }
-394: 
-395:         return cornerRadii
-396:     }
-397: 
-398:     static func generateRoundedRectPath(rect: CGRect, cornerRadii: CornerRadii) -> CGPath {
-399:         let cornerRadii = self.clampedCornerRadii(size: rect.size, cornerRadii: cornerRadii)
-400:         let path = CGMutablePath()
-401: 
-402:         func addCorner(tangent1End: CGPoint, tangent2End: CGPoint, radius: CGFloat) {
-403:             if radius > CGFloat.ulpOfOne {
-404:                 path.addArc(tangent1End: tangent1End, tangent2End: tangent2End, radius: radius)
-405:             } else {
-406:                 path.addLine(to: tangent1End)
-407:                 path.addLine(to: tangent2End)
-408:             }
-409:         }
-410: 
-411:         path.move(to: CGPoint(x: rect.minX, y: rect.minY + cornerRadii.topLeft))
-412:         addCorner(
-413:             tangent1End: CGPoint(x: rect.minX, y: rect.minY),
-414:             tangent2End: CGPoint(x: rect.minX + cornerRadii.topLeft, y: rect.minY),
-415:             radius: cornerRadii.topLeft
-416:         )
-417:         path.addLine(to: CGPoint(x: rect.maxX - cornerRadii.topRight, y: rect.minY))
-418:         addCorner(
-419:             tangent1End: CGPoint(x: rect.maxX, y: rect.minY),
-420:             tangent2End: CGPoint(x: rect.maxX, y: rect.minY + cornerRadii.topRight),
-421:             radius: cornerRadii.topRight
-422:         )
-423:         path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - cornerRadii.bottomRight))
-424:         addCorner(
-425:             tangent1End: CGPoint(x: rect.maxX, y: rect.maxY),
-426:             tangent2End: CGPoint(x: rect.maxX - cornerRadii.bottomRight, y: rect.maxY),
-427:             radius: cornerRadii.bottomRight
-428:         )
-429:         path.addLine(to: CGPoint(x: rect.minX + cornerRadii.bottomLeft, y: rect.maxY))
-430:         addCorner(
-431:             tangent1End: CGPoint(x: rect.minX, y: rect.maxY),
-432:             tangent2End: CGPoint(x: rect.minX, y: rect.maxY - cornerRadii.bottomLeft),
-433:             radius: cornerRadii.bottomLeft
-434:         )
-435:         path.closeSubpath()
-436: 
-437:         return path
-438:     }
-439: 
-440:     static func generateRoundedRectPath(size: CGSize, cornerRadii: CornerRadii) -> CGPath {
-441:         return self.generateRoundedRectPath(rect: CGRect(origin: CGPoint(), size: size), cornerRadii: cornerRadii)
-442:     }
-443:     
-444:     private final class ClippingShapeContext {
-445:         // MARK: Regram — the owning view retains its clipping context; avoid retaining it back.
-446:         unowned let view: UIView
-447:         private var maskLayer: CAShapeLayer?
-448:         
-449:         private(set) var shape: Shape?
-450:         
-451:         init(view: UIView) {
-452:             self.view = view
-453:         }
-454:         
-455:         func update(shape: Shape, size: CGSize, transition: ComponentTransition) {
-456:             self.shape = shape
-457:             
-458:             switch shape {
-459:             case let .roundedRect(cornerRadius):
-460:                 self.maskLayer = nil
-461:                 self.view.layer.mask = nil
-462:                 transition.setCornerRadius(layer: self.view.layer, cornerRadius: cornerRadius)
-463:             case let .customRoundedRect(cornerRadii):
-464:                 transition.setCornerRadius(layer: self.view.layer, cornerRadius: 0.0)
-465:                 if #available(iOS 26.0, *) {
-466:                     transition.animateView {
-467:                         self.view.cornerConfiguration = .corners(
-468:                             topLeftRadius: .fixed(cornerRadii.topLeft),
-469:                             topRightRadius: .fixed(cornerRadii.topRight),
-470:                             bottomLeftRadius: .fixed(cornerRadii.bottomLeft),
-471:                             bottomRightRadius: .fixed(cornerRadii.bottomRight)
-472:                         )
-473:                     }
-474:                 } else {
-475:                     let maskLayer: CAShapeLayer
-476:                     if let current = self.maskLayer {
-477:                         maskLayer = current
-478:                     } else {
-479:                         maskLayer = CAShapeLayer()
-480:                         maskLayer.fillColor = UIColor.black.cgColor
-481:                         self.maskLayer = maskLayer
-482:                         self.view.layer.mask = maskLayer
-483:                     }
-484:                     transition.setFrame(layer: maskLayer, frame: CGRect(origin: CGPoint(), size: size))
-485:                     transition.setShapeLayerPath(layer: maskLayer, path: GlassBackgroundView.generateRoundedRectPath(size: size, cornerRadii: cornerRadii))
-486:                 }
-487:             }
-488:         }
-489:     }
-490:     
-491:     public struct Params: Equatable {
-492:         public let shape: Shape
-493:         public let isDark: Bool
-494:         public let tintColor: TintColor
-495:         public let isInteractive: Bool
-496:         public let isVisible: Bool
-497:         
-498:         init(shape: Shape, isDark: Bool, tintColor: TintColor, isInteractive: Bool, isVisible: Bool) {
-499:             self.shape = shape
-500:             self.isDark = isDark
-501:             self.tintColor = tintColor
-502:             self.isInteractive = isInteractive
-503:             self.isVisible = isVisible
-504:         }
-505:     }
-506:     
-507:     private let legacyView: LegacyGlassView?
-508:     private let legacyHighlightContainerView: UIView?
-509:     private let legacyHighlightClippingContext: ClippingShapeContext?
-510:     private var glassHighlightRecognizer: GlassHighlightGestureRecognizer?
-511:     
-512:     private var nativeView: UIVisualEffectView?
-513:     private var nativeViewClippingContext: ClippingShapeContext?
-514:     private let nativeParamsView: EffectSettingsContainerView?
-515: 
-516:     public var nativeBlurRadius: CGFloat? {
-517:         didSet {
-518:             if self.nativeBlurRadius != oldValue {
-519:                 self.applyNativeBlurRadius()
-520:             }
-521:         }
-522:     }
-523:     
-524:     private let foregroundView: UIImageView?
-525:     private let shadowView: UIImageView?
-526: 
-527:     // MARK: Regram — individual controls can omit the glass drop shadow.
-528:     private var shadowClippingContext: ClippingShapeContext?
-529:     public var displaysShadow: Bool = true {
-530:         didSet {
-531:             guard self.displaysShadow != oldValue else { return }
-532:             self.shadowView?.isHidden = !self.displaysShadow
-533:             self.clipsToBounds = !self.displaysShadow
-534:             if self.displaysShadow {
-535:                 self.shadowClippingContext = nil
-536:                 self.layer.mask = nil
-537:                 self.layer.cornerRadius = 0.0
-538:             } else {
-539:                 self.shadowClippingContext = ClippingShapeContext(view: self)
-540:                 if let params = self.params {
-541:                     self.shadowClippingContext?.update(shape: params.shape, size: self.bounds.size, transition: .immediate)
-542:                 }
-543:             }
-544:         }
-545:     }
-546:     
-547:     private let maskContainerView: UIView
-548:     public let maskContentView: UIView
-549:     private let contentContainer: ContentContainer
-550:     
-551:     private var innerBackgroundView: UIView?
-552:     
-553:     /// UIKit's liquid morph must target the effect view itself so the backdrop
-554:     /// participates in the shape transition along with its content.
-555:     public var transitionView: UIView {
-556:         return self.nativeView ?? self
-557:     }
-558: 
-559:     /// The glass's outline in its bounds, in the shape it was last laid out with. The rounding is drawn by the native
-560:     /// view (`layer.cornerRadius` there, not here), so a context menu that morphs out of this glass takes its outline
-561:     /// from this.
-562:     public var outlinePath: UIBezierPath? {
-563:         guard let shape = self.params?.shape else {
-564:             return nil
-565:         }
-566:         let bounds = self.bounds
-567:         switch shape {
-568:         case let .roundedRect(cornerRadius):
-569:             return UIBezierPath(roundedRect: bounds, cornerRadius: min(cornerRadius, min(bounds.width, bounds.height) * 0.5))
-570:         case .customRoundedRect:
-571:             return UIBezierPath(cgPath: GlassBackgroundView.generateRoundedRectPath(rect: bounds, cornerRadii: shape.cornerRadii(for: bounds.size)))
-572:         }
-573:     }
-574: 
-575:     public var contentView: UIView {
-576:         if let nativeView = self.nativeView {
-577:             return nativeView.contentView
-578:         } else {
-579:             return self.contentContainer
-580:         }
-581:     }
-582: 
-583:     /// Puts a new effect view in place of the native one, with the same effect, shape and content (`contentView` is then
-584:     /// the new one's). UIKit's press on interactive glass (`_UIFlexInteraction`) belongs to the effect view it started on,
-585:     /// and a glass it is pressing is not fused with its neighbours in a glass container: it keeps its own edge inside
-586:     /// their merged shape (probed on iOS 27; removing the interaction leaves the press's lift and tint behind, a new effect
-587:     /// view is clean). The press ends with the old view; a caller that wants it continues it. Does nothing for the custom
-588:     /// glass.
-589:     public func renewNativeView() {
-590:         guard let nativeParamsView = self.nativeParamsView, let previous = self.nativeView, let shape = self.nativeViewClippingContext?.shape else {
-591:             return
-592:         }
-593:         let nativeView = UIVisualEffectView(effect: previous.effect)
-594:         nativeView.overrideUserInterfaceStyle = previous.overrideUserInterfaceStyle
-595:         // The size the glass was laid out at: a press grows the old view around it.
-596:         let size = nativeParamsView.bounds.size
-597:         nativeView.frame = CGRect(origin: CGPoint(), size: size)
-598:         let clippingContext = ClippingShapeContext(view: nativeView)
-599:         clippingContext.update(shape: shape, size: size, transition: .immediate)
-600:         for subview in previous.contentView.subviews {
-601:             nativeView.contentView.addSubview(subview)
-602:         }
-603:         nativeParamsView.insertSubview(nativeView, aboveSubview: previous)
-604:         previous.removeFromSuperview()
-605:         self.nativeView = nativeView
-606:         self.nativeViewClippingContext = clippingContext
-607:     }
-608:     
-609:     public private(set) var params: Params?
-610: 
-611:     public static var useCustomGlassImpl: Bool = false
-612: 
-613:     /// The backdrop luminance native glass sees (`EffectSettingsContainerView`'s limits, applied to every luma UIKit
-614:     /// reports by the `backdropLayer:didChangeLuma:` override in UIKitRuntimeUtils): the whole range on the theme's
-615:     /// side of the luminance at which UIKit would flip the glass to the other appearance, so it adapts to its
-616:     /// backdrop as UIKit's does but never leaves the theme's light or dark mode.
-617:     ///
-618:     /// UIKit flips light glass to dark below 0.1 on iOS 27 and below 0.2 on iOS 26, and dark glass to light above
-619:     /// 0.9 (`GlassMaterialProvider.HysteresisRange.default`: (0.1, 0.3, 0.7, 0.9) on iOS 27, (0.2, 0.5, 0.6, 0.9) on
-620:     /// iOS 26.5, read in the simulators), after quantizing the luminance to `min(31, floor(luma * 32)) / 31`
-621:     /// (`GlassGroupLayerView`). 0.125 quantizes to 0.129 and 0.874 to 0.871; iOS 26's 0.22 clears 0.2 either way.
-622:     static func adaptiveLumaRange(isDark: Bool) -> (min: Double, max: Double) {
-623:         if isDark {
-624:             return (0.0, 0.874)
-625:         }
-626:         if #available(iOS 27.0, *) {
-627:             return (0.125, 1.0)
-628:         } else {
-629:             return (0.22, 1.0)
-630:         }
-631:     }
-632: 
-633:     public override init(frame: CGRect) {
-634:         if #available(iOS 26.0, *), !GlassBackgroundView.useCustomGlassImpl {
-635:             self.legacyView = nil
-636:             self.legacyHighlightContainerView = nil
-637:             self.legacyHighlightClippingContext = nil
-638:             
-639:             let glassEffect = UIGlassEffect(style: .regular)
-640:             glassEffect.isInteractive = false
-641:             let nativeView = UIVisualEffectView(effect: glassEffect)
-642:             self.nativeViewClippingContext = ClippingShapeContext(view: nativeView)
-643:             self.nativeView = nativeView
-644:             
-645:             let nativeParamsView = EffectSettingsContainerView(frame: CGRect())
-646:             self.nativeParamsView = nativeParamsView
-647:             
-648:             nativeParamsView.addSubview(nativeView)
-649:             
-650:             self.foregroundView = nil
-651:             self.shadowView = nil
-652:         } else {
-653:             self.legacyView = LegacyGlassView(frame: CGRect())
-654:             let legacyHighlightContainerView = UIView()
-655:             legacyHighlightContainerView.isUserInteractionEnabled = false
-656:             legacyHighlightContainerView.clipsToBounds = true
-657:             self.legacyHighlightContainerView = legacyHighlightContainerView
-658:             self.legacyHighlightClippingContext = ClippingShapeContext(view: legacyHighlightContainerView)
-659:             self.nativeView = nil
-660:             self.nativeViewClippingContext = nil
-661:             self.nativeParamsView = nil
-662:             self.foregroundView = UIImageView()
-663:             
-664:             self.shadowView = UIImageView()
-665:         }
-666:         
-667:         self.maskContainerView = UIView()
-668:         self.maskContainerView.backgroundColor = .white
-669:         if let filter = CALayer.luminanceToAlpha() {
-670:             self.maskContainerView.layer.filters = [filter]
-671:         }
-672:         
-673:         self.maskContentView = UIView()
-674:         self.maskContainerView.addSubview(self.maskContentView)
-675:         
-676:         self.contentContainer = ContentContainer(maskContentView: self.maskContentView)
-677:         
-678:         super.init(frame: frame)
-679: 
-680:         if let shadowView = self.shadowView {
-681:             self.addSubview(shadowView)
-682:         }
-683:         if let nativeParamsView = self.nativeParamsView {
-684:             self.addSubview(nativeParamsView)
-685:         }
-686:         if let legacyView = self.legacyView {
-687:             self.addSubview(legacyView)
-688:             let glassHighlightRecognizer = GlassHighlightGestureRecognizer(target: self, action: #selector(self.onHighlightGesture(_:)))
-689:             glassHighlightRecognizer.highlightContainerView = self.legacyHighlightContainerView
-690:             self.glassHighlightRecognizer = glassHighlightRecognizer
-691:             self.addGestureRecognizer(glassHighlightRecognizer)
-692:             glassHighlightRecognizer.isEnabled = false
-693:         }
-694:         if let foregroundView = self.foregroundView {
-695:             self.addSubview(foregroundView)
-696:             foregroundView.mask = self.maskContainerView
-697:         }
-698:         self.addSubview(self.contentContainer)
-699:         if let legacyHighlightContainerView = self.legacyHighlightContainerView {
-700:             self.addSubview(legacyHighlightContainerView)
-701:         }
-702:     }
-703:     
-704:     required public init?(coder: NSCoder) {
-705:         fatalError("init(coder:) has not been implemented")
-706:     }
-707:     
-708:     @objc private func onHighlightGesture(_ recognizer: GlassHighlightGestureRecognizer) {
-709:     }
-710:     
-711:     override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-712:         if !self.isUserInteractionEnabled {
-713:             return nil
-714:         }
-715:         if self.isHidden {
-716:             return nil
-717:         }
-718:         if self.alpha == 0.0 {
-719:             return nil
-720:         }
-721:         if let nativeView = self.nativeView {
-722:             if let result = nativeView.hitTest(self.convert(point, to: nativeView), with: event) {
-723:                 return result
-724:             }
-725:         } else {
-726:             if let result = self.contentContainer.hitTest(self.convert(point, to: self.contentContainer), with: event) {
-727:                 return result
-728:             }
-729:         }
-730:         return nil
-731:     }
-732:     
-733:     public func update(size: CGSize, cornerRadius: CGFloat, isDark: Bool, tintColor: TintColor, isInteractive: Bool = false, isVisible: Bool = true, transition: Component
-734:         let shape: Shape = .roundedRect(cornerRadius: cornerRadius)
-735:         self.update(size: size, shape: shape, isDark: isDark, tintColor: tintColor, isInteractive: isInteractive, isVisible: isVisible, transition: transition)
-736:     }
-737: 
-738:     public func update(size: CGSize, cornerRadii: CornerRadii, isDark: Bool, tintColor: TintColor, isInteractive: Bool = false, isVisible: Bool = true, transition: Compon
-739:         let shape: Shape = .customRoundedRect(cornerRadii: cornerRadii)
-740:         self.update(size: size, shape: shape, isDark: isDark, tintColor: tintColor, isInteractive: isInteractive, isVisible: isVisible, transition: transition)
-741:     }
-742: 
-743:     func update(size: CGSize, shape: Shape, isDark: Bool, tintColor: TintColor, isInteractive: Bool = false, isVisible: Bool = true, transition: ComponentTransition) {
-744:         // MARK: Regram — clip native/legacy shadows to the same capsule as the glass.
-745:         self.shadowClippingContext?.update(shape: shape, size: size, transition: transition)
-746: 
-747:         if let glassHighlightRecognizer = self.glassHighlightRecognizer {
-748:             glassHighlightRecognizer.isEnabled = isInteractive
-749:         }
-750:         
-751:         // UIKit can sample backdrop luminance synchronously while changing
-752:         // appearance or effect. Install the new limits before either update.
-753:         if let nativeParamsView = self.nativeParamsView {
-754:             let lumaRange = GlassBackgroundView.adaptiveLumaRange(isDark: isDark)
-755:             nativeParamsView.lumaMin = lumaRange.min
-756:             nativeParamsView.lumaMax = lumaRange.max
-757:         }
-758: 
-759:         if let nativeView = self.nativeView, let nativeViewClippingContext = self.nativeViewClippingContext, (nativeView.bounds.size != size || nativeViewClippingContext.
-760:             nativeViewClippingContext.update(shape: shape, size: size, transition: transition)
-761:             if transition.animation.isImmediate {
-762:                 nativeView.frame = CGRect(origin: CGPoint(), size: size)
-763:             } else {
-764:                 let nativeFrame = CGRect(origin: CGPoint(), size: size)
-765:                 transition.animateView {
-766:                     nativeView.frame = nativeFrame
-767:                 }
-768:             }
-769:             nativeView.overrideUserInterfaceStyle = isDark ? .dark : .light
-770:         }
-771:         if let legacyView = self.legacyView {
-772:             let style: LegacyGlassView.Style
-773:             switch tintColor.kind {
-774:             case .panel, .untinted:
-775:                 style = .normal
-776:             case .clear:
-777:                 style = .clear
-778:             case let .custom(styleValue, _):
-779:                 switch styleValue {
-780:                 case .clear:
-781:                     style = .clear
-782:                 case .default:
-783:                     style = .normal
-784:                 }
-785:             }
-786:             legacyView.update(size: size, shape: shape, style: style, transition: transition)
-787:             transition.setFrame(view: legacyView, frame: CGRect(origin: CGPoint(), size: size))
-788:             transition.setAlpha(view: legacyView, alpha: isVisible ? 1.0 : 0.0)
-789:             
-790:             transition.setPosition(view: self.contentView, position: CGPoint(x: size.width * 0.5, y: size.height * 0.5))
-791:             transition.setBounds(view: self.contentView, bounds: CGRect(origin: CGPoint(), size: size))
-792:         }
-793:         if let legacyHighlightContainerView = self.legacyHighlightContainerView {
-794:             transition.setFrame(view: legacyHighlightContainerView, frame: CGRect(origin: CGPoint(), size: size))
-795:             self.legacyHighlightClippingContext?.update(shape: shape, size: size, transition: transition)
-796:         }
-797:         
-798:         let shadowInset: CGFloat = 32.0
-799:         
-800:         if let innerColor = tintColor.innerColor {
-801:             let innerBackgroundFrame = CGRect(origin: CGPoint(), size: size).insetBy(dx: tintColor.innerInset, dy: tintColor.innerInset)
-802:             let innerBackgroundRadius = min(innerBackgroundFrame.width, innerBackgroundFrame.height) * 0.5
-803:             
-804:             let innerBackgroundView: UIView
-805:             var innerBackgroundTransition = transition
-806:             var animateIn = false
-807:             if let current = self.innerBackgroundView {
-808:                 innerBackgroundView = current
-809:             } else {
-810:                 innerBackgroundView = UIView()
-811:                 innerBackgroundTransition = innerBackgroundTransition.withAnimation(.none)
-812:                 self.innerBackgroundView = innerBackgroundView
-813:                 self.contentView.insertSubview(innerBackgroundView, at: 0)
-814:                 
-815:                 innerBackgroundView.frame = innerBackgroundFrame
-816:                 innerBackgroundView.layer.cornerRadius = innerBackgroundRadius
-817:                 animateIn = true
-818:             }
-819:             
-820:             innerBackgroundView.backgroundColor = innerColor
-821:             innerBackgroundTransition.setFrame(view: innerBackgroundView, frame: innerBackgroundFrame)
-822:             innerBackgroundTransition.setCornerRadius(layer: innerBackgroundView.layer, cornerRadius: innerBackgroundRadius)
-823:             
-824:             if animateIn {
-825:                 transition.animateAlpha(view: innerBackgroundView, from: 0.0, to: 1.0)
-826:                 transition.animateScale(view: innerBackgroundView, from: 0.001, to: 1.0)
-827:             }
-828:         } else if let innerBackgroundView = self.innerBackgroundView {
-829:             self.innerBackgroundView = nil
-830:             
-831:             transition.setAlpha(view: innerBackgroundView, alpha: 0.0, completion: { [weak innerBackgroundView] _ in
-832:                 innerBackgroundView?.removeFromSuperview()
-833:             })
-834:             transition.setScale(view: innerBackgroundView, scale: 0.001)
-835:             
-836:             innerBackgroundView.removeFromSuperview()
-837:         }
-838:         
-839:         let params = Params(shape: shape, isDark: isDark, tintColor: tintColor, isInteractive: isInteractive, isVisible: isVisible)
-840:         if self.params != params {
-841:             self.params = params
-842:             
-843:             if let shadowView = self.shadowView {
-844:                 switch shape {
-845:                 case let .roundedRect(cornerRadius):
-846:                     shadowView.image = Self.generateLegacyShadowImage(cornerRadius: cornerRadius, shadowInset: shadowInset)
-847:                 case let .customRoundedRect(cornerRadii):
-848:                     shadowView.image = Self.generateLegacyShadowImage(cornerRadii: GlassBackgroundView.clampedCornerRadii(size: size, cornerRadii: cornerRadii), shadowIns
-849:                 }
-850:                 transition.setAlpha(view: shadowView, alpha: isVisible ? 1.0 : 0.0)
-851:             }
-852:             
-853:             if let foregroundView = self.foregroundView {
-854:                 let fillColor: UIColor
-855:                 let borderWidthFactor: CGFloat
-856:                 switch tintColor.kind {
-857:                 case .panel, .untinted:
-858:                     borderWidthFactor = 1.0
-859:                     if isDark {
-860:                         fillColor = UIColor(white: 1.0, alpha: 1.0).mixedWith(.black, alpha: 1.0 - 0.11).withAlphaComponent(0.85)
-861:                     } else {
-862:                         fillColor = UIColor(white: 1.0, alpha: 0.7)
-863:                     }
-864:                 case .clear:
-865:                     borderWidthFactor = 2.0
-866:                     fillColor = UIColor(white: 1.0, alpha: 0.0)
-867:                 case let .custom(style, color):
-868:                     fillColor = color
-869:                     switch style {
-870:                     case .clear:
-871:                         borderWidthFactor = 2.0
-872:                     case .default:
-873:                         borderWidthFactor = 1.0
-874:                     }
-875:                 }
-876:                 switch shape {
-877:                 case let .roundedRect(cornerRadius):
-878:                     foregroundView.image = GlassBackgroundView.generateLegacyGlassImage(size: CGSize(width: cornerRadius * 2.0, height: cornerRadius * 2.0), inset: shadow
-879:                 case let .customRoundedRect(cornerRadii):
-880:                     foregroundView.image = GlassBackgroundView.generateLegacyGlassImage(cornerRadii: GlassBackgroundView.clampedCornerRadii(size: size, cornerRadii: corne
-881:                 }
-882:                 #if DEBUG
-883:                 //foregroundView.image = nil
-884:                 #endif
-885:                 transition.setAlpha(view: foregroundView, alpha: isVisible ? 1.0 : 0.0)
-886:             } else {
-887:                 if let nativeView = self.nativeView {
-888:                     if #available(iOS 26.0, *) {
-889:                         var glassEffect: UIGlassEffect?
-890:                         
-891:                         if isVisible {
-892:                             let nativeTint = tintColor.nativeEffect(isDark: isDark)
-893:                             let glassEffectValue = UIGlassEffect(style: nativeTint.isClear ? .clear : .regular)
-894:                             glassEffectValue.tintColor = nativeTint.color
-895:                             glassEffectValue.isInteractive = isInteractive
-896:                             glassEffect = glassEffectValue
-897:                         }
-898:                         
-899:                         if glassEffect == nil {
-900:                             if nativeView.effect is UIGlassEffect {
-
-## OUTLINE submodules/TelegramUI/Components/GlassBackgroundComponent/Sources/LegacyGlassView.swift (233 lines)
-16: private func getMethod<T>(object: NSObject, selector: String) -> T? {
-24: private func invokeBackdropLayerCreateMethod() -> NSObject? {
-43: private func invokeBackdropLayerInitMethod(object: NSObject) -> NSObject? {
-58: public func createBackdropLayer() -> CALayer? {
-64: private func invokeBackdropLayerSetScaleMethod(object: NSObject, scale: Double) {
-77: private final class BackdropLayerDelegate: NSObject, CALayerDelegate {
-78: func action(for layer: CALayer, forKey event: String) -> CAAction? {
-83: final class LegacyGlassView: UIView {
-84: enum Style {
-89: private struct Params: Equatable {
-94: init(size: CGSize, shape: GlassBackgroundView.Shape, style: Style) {
-107: override init(frame: CGRect) {
-129: func update(size: CGSize, cornerRadius: CGFloat, style: Style, transition: ComponentTransition) {
-133: func update(size: CGSize, shape: GlassBackgroundView.Shape, style: Style, transition: ComponentTransition) {
-149: if #available(iOS 17.0, *), DeviceMetrics.performance.isGraphicallyCapable {
-198: if #available(iOS 17.0, *), DeviceMetrics.performance.isGraphicallyCapable {
-
-## OUTLINE submodules/TelegramUI/Components/StaticGlassBackground/Sources/StaticGlassBackgroundView.swift (247 lines)
-8: public final class StaticGlassBackgroundView: UIView {
-12: override public init(frame: CGRect) {
-29: public func update(size: CGSize, cornerRadius: CGFloat, isDark: Bool, tint: StaticGlassTint, animateImageChange: Bool = false, updateFrame: ((UIView, 
-53: private final class StaticGlassImageCache {
-56: private struct ImageKey: Hashable {
-70: private func asset(name: String, optional: Bool = false) -> StaticGlassAssetData? {
-90: func image(size: CGSize, cornerRadius: CGFloat, isDark: Bool, tint: StaticGlassTint) -> (UIImage, UIEdgeInsets)? {
-165: public func staticGlassCutPixels(_ pixels: Data, width: Int, height: Int, frame: CGRect, vertical: Bool, shapeLength: Int) -> (width: Int, height: Int
-199: private func staticGlassTinted(pixels: Data, width: Int, height: Int, frame: CGRect, scale: Int, outset: CGFloat, tint: (r: CGFloat, g: CGFloat, b: CG
-
-## OUTLINE submodules/TelegramUI/Components/StaticGlassBackground/Sources/StaticGlassBackground.swift (212 lines)
-4: public enum StaticGlassTint: Equatable {
-12: public enum StaticGlassAssetShape: String {
-40: public struct StaticGlassAssetChoice: Equatable {
-45: public init(shape: StaticGlassAssetShape, scale: CGFloat) {
-55: public func staticGlassAssetChoice(size: CGSize, cornerRadius: CGFloat, isMedia: Bool = false) -> StaticGlassAssetChoice {
-81: public func staticGlassCapturedTint(color: UIColor, isDark: Bool) -> String? {
-86: func near(_ x: CGFloat, _ y: CGFloat) -> Bool {
-103: public func staticGlassCutLengths(size: CGSize, imageScale: CGFloat, assetFrame: CGRect, stretchesHorizontally: Bool, stretchesVertically: Bool, scale
-104: func cut(_ length: CGFloat, _ assetLength: CGFloat, _ stretches: Bool) -> Int? {
-119: public func staticGlassNeedsCutting(shapeWidth: CGFloat, assetFrameWidth: Int, scale: Int) -> Bool {
-125: public func staticGlassTintedPixel(_ pixel: [UInt8], coverage: CGFloat, tint: (r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat)) -> [UInt8] {
-145: public func staticGlassTintRimGain(distance: CGFloat) -> CGFloat {
-159: public func staticGlassTintOutset(isDark: Bool) -> CGFloat {
-165: public func staticGlassCapsuleDistance(_ point: CGPoint, frame: CGRect) -> CGFloat {
-171: public func staticGlassCapsuleDistanceAndNormal(_ point: CGPoint, frame: CGRect) -> (distance: CGFloat, normalY: CGFloat) {
-182: public struct StaticGlassAssetData {
-193: public init?(data: Data) {
-199: func u16(_ offset: Int) -> Int {
-
-## OUTLINE submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesLayer.swift (391 lines)
-8: public protocol LiquidGlassShapesSource: AnyObject {
-10: func liquidGlassShapesAdvance(by deltaTime: CGFloat)
-12: func liquidGlassShapes(size: CGSize, isFlat: Bool) -> LiquidGlassShapeSet?
-14: func liquidGlassAppearance(mode: LiquidGlassRenderMode, isDarkAppearance: Bool) -> LiquidGlassAppearance
-17: private func colorVector(_ color: UIColor) -> SIMD4<Float> {
-26: private func encodeShapeKernel<Parameters>(commandBuffer: MTLCommandBuffer, pipelineState: MTLComputePipelineState, parameters: Parameters, sampleCoun
-49: public final class LiquidGlassShapesLayer: SimpleLayer, MetalEngineSubject {
-50: private enum Constants {
-59: private struct ColorTransition {
-155: public init(colors: (UIColor, UIColor)) {
-170: override public init(layer: Any) {
-192: public func updateLayout() {
-201: public func updateColors(_ colors: (UIColor, UIColor), animated: Bool) {
-223: private func releaseSurfaces() {
-230: private func updateStyle() {
-234: if #available(iOS 26.0, *) {
-271: private func updateDisplayLink() {
-285: private func displayLinkTick() {
-314: public func update(context: MetalEngineSubjectContext) {
-327: private func update<Kind: LiquidGlassShapesKind, Parameters>(context: MetalEngineSubjectContext, kind: Kind.Type, parameters: Parameters, sampleBuffer
-358: func render<Pass: LiquidGlassShapesPass>(_ pass: Pass.Type, layer: MetalEngineSubjectLayer, scale: CGSize) {
-
-## OUTLINE submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassBackdropLayers.swift (60 lines)
-10: final class LiquidGlassBackdropLayers {
-17: init?(blurRadius: CGFloat, scale: CGFloat) {
-53: func updateFrame(_ frame: CGRect) {
-
-## OUTLINE submodules/TelegramUI/Components/NavigationBarComponent/Sources/NavigationBarPlatterTransitionView.swift (1319 lines)
-35: public final class NavigationBarPlatterTransitionView: UIView {
-36: public struct Side {
-62: public init(content: NavigationBarComponent.Content, theme: NavigationBarTheme, strings: NavigationBarStrings, leftInset: CGFloat, rightInset: CGFloat
-83: enum Role: Hashable {
-89: static func all(rightCount: Int, columnCount: Int) -> [Role] {
-108: private enum SideKind {
-114: private final class Items {
-132: init(side: SideKind, view: UIView, frame: CGRect, appearance: CGFloat, motion: NavigationBarGlassMotion) {
-142: func center(inPlatterAt platterFrame: CGRect, time: Double) -> CGPoint {
-151: func startRiding(platterFrame: CGRect, platterVelocity: CGPoint, spring: NavigationTransitionSpring, at time: Double) {
-159: private final class Platter {
-202: init(role: Role, frame: CGRect, tint: GlassBackgroundView.TintColor, isDark: Bool) {
-220: func frame(at time: Double) -> CGRect {
-227: func glassFrame(at time: Double) -> CGRect {
-240: func drawingTransform(at time: Double) -> CGAffineTransform {
-247: func cornerRadius(size: CGSize, at time: Double) -> CGFloat {
-251: func animateFrame(to frame: CGRect, spring: NavigationTransitionSpring, at time: Double) {
-274: func rebase(by time: Double) {
-294: func settle() {
-295: func settled(_ curve: NavigationSpringCurve) -> NavigationSpringCurve {
-320: func removeViews() {
-329: private struct SideLayout {
-393: override public init(frame: CGRect) {
-406: public func setSides(bottom: Side, top: Side) {
-467: private func layout(side: Side, contentView: NavigationBarContentView, kind: SideKind) -> SideLayout {
-536: private func columnBackItems(kind: SideKind, container: UIView, size: CGSize, badge: String?, theme: NavigationBarTheme) -> UIView {
-572: private func itemsContainer(of view: UIView, kind: SideKind, contentView: NavigationBarContentView) -> UIView? {
-594: private func layout(_ side: SideKind) -> SideLayout {
-599: public func beginTransition(isInteractive: Bool, toTop: Bool) {
-662: public func beginInteraction() {
-671: public func endInteraction(towardTop: Bool) {
-679: private func switchTo(_ side: SideKind) {
-811: private func startMatchedMorph(_ platter: Platter, source: CGRect, target: CGRect, appearing: Bool, containerWidth: CGFloat) -> Double {
-821: func curve(from: CGFloat, to: CGFloat, rest: NavigationSpringRest) -> NavigationSpringCurve {
-842: private func mergesGlass(_ platter: Platter) -> Bool {
-846: func materialized(_ partner: Platter) -> Bool {
-857: private func hostGlass(_ platter: Platter) {
-880: private func isGlassMerged(_ platter: Platter) -> Bool {
-888: private func pulseMatchedPair(_ platter: Platter, ownSize: CGSize, start: Double, partner: Platter, partnerFrame: CGRect, rowFrame: CGRect) {
-895: private func addViews(of platter: Platter) {
-900: private func startTintFade(_ platter: Platter, from tint: GlassBackgroundView.TintColor) {
-927: private func rebake(continuing: Bool) {
-950: private func clockEnded() {
-961: private func bake(_ platter: Platter, timing: NavigationKeyframeTiming) {
-972: func add(_ layer: CALayer, _ keyPath: String, _ values: [Any]) {
-1030: private func addBlurKeyframes(to layer: CALayer, radii: [CGFloat], timing: NavigationKeyframeTiming) {
-1047: private func prune() {
-1078: private func reportSettledIfNeeded() {
-1085: private func applyAll() {
-1096: private func attachItems(_ platter: Platter) {
-1105: private func apply(_ platter: Platter) {
-1154: struct PlatterState {
-1172: func platterStateForTesting(_ role: Role) -> PlatterState? {
-1195: func currentItemsFramesForTesting(_ role: Role) -> [CGRect] {
-1207: func leavingItemsViewsForTesting(_ role: Role) -> [UIView] {
-1212: func badgeNodeForTesting(_ role: Role) -> NavigationBarBadgeNode? {
-1219: func containerViewForTesting(_ role: Role) -> UIView? {
-1224: func glassViewForTesting(_ role: Role) -> UIView? {
-1228: func glassContainerForTesting(_ role: Role) -> GlassBackgroundContainerView? {
-1239: func platterIdentityForTesting(_ role: Role) -> ObjectIdentifier? {
-1243: struct ItemsState {
-1250: func itemsStateForTesting(_ role: Role) -> [ItemsState] {
-1262: private func navigationBarCapsuleSignature(_ content: NavigationBarComponent.Content, role: NavigationBarPlatterTransitionView.Role, columnLength: CGF
-1284: private enum NavigationBarColumnShape {
-1292: private func navigationBarColumnShapeSignature(_ content: NavigationBarComponent.Content, shape: NavigationBarColumnShape, columnLength: CGFloat?, hid
-1317: private func lerpRect(_ a: CGRect, _ b: CGRect, _ t: CGFloat) -> CGRect {
-
-## OUTLINE submodules/TelegramCore/Sources/State/ChatHistoryPreloadManager.swift (546 lines)
-6: public struct HistoryPreloadIndex: Hashable, Comparable, CustomStringConvertible {
-13: public init(index: ChatListIndex?, threadId: Int64?, hasUnread: Bool, isMuted: Bool, isPriority: Bool) {
-21: public static func <(lhs: HistoryPreloadIndex, rhs: HistoryPreloadIndex) -> Bool {
-68: private struct HistoryPreloadHole: Hashable, Comparable, CustomStringConvertible {
-72: static func <(lhs: HistoryPreloadHole, rhs: HistoryPreloadHole) -> Bool {
-81: private final class HistoryPreloadEntry: Comparable {
-86: init(hole: HistoryPreloadHole) {
-90: static func ==(lhs: HistoryPreloadEntry, rhs: HistoryPreloadEntry) -> Bool {
-94: static func <(lhs: HistoryPreloadEntry, rhs: HistoryPreloadEntry) -> Bool {
-98: func startIfNeeded(postbox: Postbox, accountPeerId: PeerId, download: Signal<Download, NoError>, queue: Queue) {
-129: private final class HistoryPreloadViewContext {
-151: init(index: ChatListIndex?, threadId: Int64?, hasUnread: Bool?, isMuted: Bool?, isPriority: Bool) {
-164: private enum ChatHistoryPreloadEntity: Hashable {
-168: private struct ChatHistoryPreloadIndex {
-173: public final class ChatHistoryPreloadMediaItem: Comparable {
-177: init(preloadIndex: HistoryPreloadIndex, media: HolesViewMedia) {
-182: public static func ==(lhs: ChatHistoryPreloadMediaItem, rhs: ChatHistoryPreloadMediaItem) -> Bool {
-192: public static func <(lhs: ChatHistoryPreloadMediaItem, rhs: ChatHistoryPreloadMediaItem) -> Bool {
-200: private final class AdditionalPreloadPeerIdsContext {
-210: init(queue: Queue) {
-218: func add(peerId: PeerId) -> Disposable {
-250: public struct ChatHistoryPreloadItem : Equatable, Hashable {
-256: public func hash(into hasher: inout Hasher) {
-263: public init(index: ChatListIndex, threadId: Int64?, isMuted: Bool, hasUnread: Bool) {
-271: final class ChatHistoryPreloadManager {
-297: init(postbox: Postbox, network: Network, accountPeerId: PeerId, networkState: Signal<AccountNetworkState, NoError>, preloadItemsSignal: Signal<[ChatHi
-337: func addAdditionalPeerId(peerId: PeerId) -> Disposable {
-345: func start() {
-363: /*#if DEBUG
-378: private func update(indices: [(ChatHistoryPreloadIndex, Bool, Bool)], additionalPeerIds: Set<PeerId>) {
-379: /*#if DEBUG
-484: private func updateMedia() {
-498: private func update(from previousHole: HistoryPreloadHole?, to updatedHole: HistoryPreloadHole?) {
-
-## OUTLINE submodules/TelegramUI/Sources/PrefetchManager.swift (307 lines)
-14: private final class PrefetchMediaContext {
-17: init() {
-21: public enum PrefetchMediaItem {
-26: private final class PrefetchManagerInnerImpl {
-39: init(queue: Queue, sharedContext: SharedAccountContext, account: Account, engine: TelegramEngine, fetchManager: FetchManager) {
-109: private func updateOrderedPreloadMedia(_ items: [PrefetchMediaItem], automaticDownloadSettings: MediaAutoDownloadSettings, networkType: MediaAutoDownl
-110: #if DEBUG
-247: fileprivate func prepareNextGreetingSticker() {
-273: final class PrefetchManagerImpl: PrefetchManager {
-279: init(sharedContext: SharedAccountContext, account: Account, engine: TelegramEngine, fetchManager: FetchManager) {
-301: func prepareNextGreetingSticker() {
-
-## OUTLINE submodules/TelegramUI/Sources/InChatPrefetchManager.swift (271 lines)
-14: private final class PrefetchMediaContext {
-21: init(resourceId: String, mode: Int) {
-28: private struct RGChatPrefetchInput: Equatable {
-35: private func rgPrefetchResource(_ media: Media) -> MediaResource? {
-41: struct InChatPrefetchOptions: Equatable {
-46: final class InChatPrefetchManager {
-64: init(context: AccountContext) {
-87: func updateAutoDownloadSettings(_ settings: MediaAutoDownloadSettings) {
-96: func updateOptions(_ options: InChatPrefetchOptions) {
-105: func updateMessages(_ messages: [(Message, Media)], directionIsToLater: Bool) {
-119: private func update() {
-222: func rgSetActive(_ value: Bool) {
-231: func rgUpdateVisibleResources(_ resourceIds: [String]) {
-237: private func rgPublishPriorities() {
-243: private func rgRemoveContext(_ id: MediaId) {
-251: private func rgDisposeAll() {
-257: private func rgDeferRemoval(_ id: MediaId) {
-
-## OUTLINE submodules/MediaPlayer/Sources/TimeBasedVideoPreload.swift (44 lines)
-2: #if !os(macOS)
-12: public func preloadVideoResource(postbox: Postbox, userLocation: MediaResourceUserLocation, userContentType: MediaResourceUserContentType, resourceRef
-
-## RANGE submodules/TelegramPresentationData/Sources/PresentationData.swift 540-600
-540:             return ActionDisposable {
-541:                 timer.invalidate()
-542:             }
-543:         }
-544:         |> runOn(Queue.mainQueue())
-545:         |> distinctUntilChanged
-546:     }
-547: }
-548: 
-549: public func automaticEnergyUsageShouldBeOnNow(settings: MediaAutoDownloadSettings) -> Bool {
-550:     if settings.energyUsageSettings.activationThreshold <= 4 {
-551:         return false
-552:     } else if settings.energyUsageSettings.activationThreshold >= 96 {
-553:         return true
-554:     } else {
-555:         let batteryLevel = UIDevice.current.batteryLevel
-556:         if batteryLevel < 0.0 {
-557:             return false
-558:         } else {
-559:             return batteryLevel <= Float(settings.energyUsageSettings.activationThreshold) / 100.0
-560:         }
-561:     }
-562: }
-563: 
-564: public func automaticEnergyUsageShouldBeOn(settings: MediaAutoDownloadSettings) -> Signal<Bool, NoError> {
-565:     if settings.energyUsageSettings.activationThreshold <= 4 {
-566:         return .single(false)
-567:     } else if settings.energyUsageSettings.activationThreshold >= 96 {
-568:         return .single(true)
-569:     } else {
-570:         return Signal { subscriber in
-571:             subscriber.putNext(automaticEnergyUsageShouldBeOnNow(settings: settings))
-572:             
-573:             let observer = NotificationCenter.default.addObserver(forName: UIDevice.batteryLevelDidChangeNotification, object: nil, queue: OperationQueue.main, using: { _
-574:                 subscriber.putNext(automaticEnergyUsageShouldBeOnNow(settings: settings))
-575:             })
-576:             
-577:             return ActionDisposable {
-578:                 NotificationCenter.default.removeObserver(observer)
-579:             }
-580:         }
-581:         |> runOn(Queue.mainQueue())
-582:         |> distinctUntilChanged
-583:     }
-584: }
-585: 
-586: private func serviceColor(for data: Signal<MediaResourceData, NoError>) -> Signal<UIColor, NoError> {
-587:     return data
-588:     |> mapToSignal { data -> Signal<UIColor, NoError> in
-589:         if data.complete, let image = UIImage(contentsOfFile: data.path) {
-590:             return serviceColor(from: .single(image))
-591:         }
-592:         return .complete()
-593:     }
-594: }
-595: 
-596: public func averageColor(from image: UIImage) -> UIColor {
-597:     let context = DrawingContext(size: CGSize(width: 1.0, height: 1.0), scale: 1.0, clear: false)!
-598:     context.withFlippedContext({ context in
-599:         if let cgImage = image.cgImage {
-600:             context.draw(cgImage, in: CGRect(x: 0.0, y: 0.0, width: 1.0, height: 1.0))
-
-## GREP animationDurationFactor definitions
--- submodules/TelegramUI/Components/CoreList/CoreListDemo/AnimationUtils.swift:17
-       #endif
-       static var animationDurationFactor: Double {
-       #if DEBUG
-           if let o = debugAnimationDurationFactorOverride { return o }
-       #endif
-       #if targetEnvironment(simulator)
-           return Double(UIAnimationDragCoefficient())
-       #else
-           return 1.0
--- submodules/Display/Source/UIKitUtils.swift:6
-   public extension UIView {
-       static func animationDurationFactor() -> Double {
-           return animationDurationFactorImpl()
-       }
+## GREP device performance classes
+-- submodules/lottie-ios/Sources/Private/Utility/Debugging/TestHelpers.swift:9
+     /// Whether or not performance tests are currently running in a test target
+     static var performanceTestsAreRunning = false
    }
+-- submodules/Display/Source/DeviceMetrics.swift:10
+       public struct Performance {
+           public let isGraphicallyCapable: Bool
+           
+           init() {
+               var length: Int = 4
+               var cpuCount: UInt32 = 0
+               sysctlbyname("hw.ncpu", &cpuCount, &length, nil, 0)
+               
+               self.isGraphicallyCapable = cpuCount >= 4
+           }
+       }
+-- submodules/Display/Source/DeviceMetrics.swift:55
+       
+       public static let performance = Performance()
    
-   public func makeSpringAnimation(_ keyPath: String, duration: Double) -> CABasicAnimation {
-       return makeSpringAnimationImpl(keyPath, duration)
-   }
--- submodules/ComponentFlow/Source/Base/Transition.swift:13
-   public extension UIView {
-       static var animationDurationFactor: Double {
+       private static let currentModelIdentifier: String? = {
            #if targetEnvironment(simulator)
-           return Double(UIAnimationDragCoefficient())
+           return ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"]
            #else
-           return 1.0
-           #endif
+           var systemInfo = utsname()
+           guard uname(&systemInfo) == 0 else {
+               return nil
+           }
+
+## GREP LiquidGlassShapesLayer creation
+-- submodules/TelegramCallsUI/Sources/CallStatusBarWavesLayer.swift:160
+       init(colors: (UIColor, UIColor)) {
+           self.shapesLayer = LiquidGlassShapesLayer(colors: colors)
+           self.waves = CallStatusBarWavesLayer.waveMotions.map(Wave.init(motion:))
+   
+-- submodules/TelegramUI/Components/ChatTextInputMediaRecordingButton/Sources/ChatRecordingBlobView.swift:49
+       override init(frame: CGRect) {
+           self.shapesLayer = LiquidGlassShapesLayer(colors: (.white, .white))
+           self.outerBlob = ChatRecordingBlobMotion(parameters: ChatRecordingBlobAppearance.waveMotion)
+           self.middleBlob = ChatRecordingBlobMotion(parameters: ChatRecordingBlobAppearance.waveMotion)
+
+## GREP LiquidLensView creation
+-- submodules/DrawingUI/Sources/ModeAndSizeComponent.swift:309
+               } else {
+                   liquidLensView = LiquidLensView(kind: isTablet ? .noContainer : .externalContainer)
+                   self.liquidLensView = liquidLensView
+                   self.backgroundContainer.contentView.addSubview(liquidLensView)
+-- submodules/TelegramUI/Components/EntityKeyboard/Sources/EntityKeyboardBottomPanelComponent.swift:182
+               self.backgroundContainer = GlassBackgroundContainerView()
+               self.liquidLensView = LiquidLensView(kind: .externalContainer)
+                                       
+               super.init(frame: frame)
+-- submodules/TelegramUI/Components/TabBarComponent/Sources/TabBarComponent.swift:597
+               self.backgroundContainer = GlassBackgroundContainerView()
+               self.liquidLensView = LiquidLensView(kind: .externalContainer, backgroundTintColor: GlassBackgroundView.TintColor(kind: .untinted))
+               self.liquidLensView.displaysShadow = false // MARK: Regram
+               
+-- submodules/TelegramUI/Components/HorizontalTabsComponent/Sources/HorizontalTabsComponent.swift:436
+           override init(frame: CGRect) {
+               self.lensView = LiquidLensView(kind: .noContainer)
+               self.scrollView = ScrollView()
+               
+-- submodules/TelegramUI/Components/CameraScreen/Sources/ModeComponent.swift:376
+               } else {
+                   liquidLensView = LiquidLensView(kind: isTablet ? .noContainer : .externalContainer)
+                   self.liquidLensView = liquidLensView
+                   self.backgroundContainer.contentView.addSubview(liquidLensView)
+-- submodules/AttachmentUI/Sources/AttachmentPanel.swift:2695
+   
+                   liquidLensView = LiquidLensView(kind: .noContainer)
+                   liquidLensView.clipsToBounds = true
+                   liquidLensView.layer.cornerRadius = 28.0
+
+## GREP MetalEngine
+-- submodules/MetalEngine/Sources/MetalEngine.swift:185
+       deinit {
+           MetalEngine.shared.impl.removeLayerSurfaceAllocation(layer: self)
        }
-   }
+-- submodules/MetalEngine/Sources/MetalEngine.swift:197
+           assert(Thread.isMainThread)
+           MetalEngine.shared.impl.removeLayerSurfaceAllocation(layer: self)
+           self.surfaceAllocation = nil
+-- submodules/MetalEngine/Sources/MetalEngine.swift:509
+       func setNeedsUpdate() {
+           MetalEngine.shared.impl.addSubjectNeedsUpdate(subject: self)
+       }
+-- submodules/MetalEngine/Sources/MetalEngine.swift:1246
+       
+       public static let shared = MetalEngine()
+       
+-- submodules/TelegramCallsUI/Sources/CallControllerNodeV2.swift:1007
+           
+           CVMetalTextureCacheCreate(nil, nil, MetalEngine.shared.device, nil, &self.textureCache)
+           
+-- submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesLayer.swift:157
+           self.contentLayer = MetalEngineSubjectLayer()
+           self.crestBuffer = MetalEngine.shared.pooledBuffer(spec: BufferSpec(length: 3 * LiquidGlassShapesConstants.crestSampleCount * MemoryLayout<Flo
+           self.radialBuffer = MetalEngine.shared.pooledBuffer(spec: BufferSpec(length: 3 * LiquidGlassShapesConstants.radialSampleCount * MemoryLayout<F
+-- submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesLayer.swift:158
+           self.crestBuffer = MetalEngine.shared.pooledBuffer(spec: BufferSpec(length: 3 * LiquidGlassShapesConstants.crestSampleCount * MemoryLayout<Flo
+           self.radialBuffer = MetalEngine.shared.pooledBuffer(spec: BufferSpec(length: 3 * LiquidGlassShapesConstants.radialSampleCount * MemoryLayout<F
+           self.colors = (colorVector(colors.0), colorVector(colors.1))
+-- submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesLayer.swift:329
+           // Without samples the passes would clear their layers and draw nothing; skip the frame and keep the last one.
+           guard LiquidGlassShapesPipelines.shared.computePipelineState(device: MetalEngine.shared.device, functionName: Kind.kernelFunctionName) != nil,
+               return
+-- submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesPipelines.swift:153
+           descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+           guard let pipelineState = MetalEngine.shared.pipelineCache.makeRenderPipelineState(descriptor: descriptor) else {
+               return nil
+-- submodules/TelegramUI/Components/LiquidGlassShapes/Sources/LiquidGlassShapesPipelines.swift:177
+           descriptor.computeFunction = function
+           guard let pipelineState = MetalEngine.shared.pipelineCache.makeComputePipelineState(descriptor: descriptor) else {
+               return nil
+...cut
 
-## Regram/ top-level folders (name: swift files)
-ChatControllerImplExtension: 1
-FLEX: 0
-Playground: 6
-RGAPI: 1
-RGAPIToken: 1
-RGAPIWebSettings: 1
-RGActionRequestHandlerSanitizer: 1
-RGAppBadgeAssets: 0
-RGAppBadgeOffset: 3
-RGAppGroupIdentifier: 3
-RGAppIconSelection: 2
-RGAppUpdate: 28
-RGAuthorMessagesUI: 1
-RGBranding: 1
-RGCameraSupport: 0
-RGChatHistoryProcessing: 4
-RGChatListPlacement: 1
-RGChatListSimpleSettingsSignal: 2
-RGCommonGroupMessagesUI: 4
-RGConfig: 1
-RGContentAnalysis: 1
-RGDBReset: 3
-RGDebugUI: 1
-RGDeviceToken: 1
-RGDoubleTapMessageAction: 1
-RGEmojiKeyboardDefaultFirst: 1
-RGFeatureSignals: 1
-RGGHSettings: 1
-RGGHSettingsScheme: 1
-RGGTranslate: 6
-RGGalleryUI: 1
-RGIQTP: 1
-RGInputToolbar: 1
-RGItemListUI: 6
-RGJoinedChatFolderPicker: 1
-RGLinkMetadata: 2
-RGLocalGifts: 6
-RGLogging: 2
-RGLoggingComposer: 1
-RGMediaMetadata: 1
-RGNY: 1
-RGNotificationRecovery: 3
-RGOutgoingTranslationLanguageSelection: 1
-RGPangu: 1
-RGProUI: 21
-RGProfileBadge: 1
-RGQrLoginSupport: 4
-RGRecentSessionApiId: 2
-RGRecurringMessages: 3
-RGRegDate: 2
-RGRegDateScheme: 1
-RGRequests: 1
-RGSafariControllerUrlOpening: 1
-RGSearchLink: 2
-RGSettingsBundle: 0
-RGSettingsSearch: 1
-RGSettingsUI: 29
-RGShowMessageJson: 1
-RGSimpleSettings: 59
-RGStickerSave: 2
-RGStrings: 9
-RGSwiftSignalKit: 1
-RGSwiftUI: 5
-RGTranscription: 3
-RGTranslationLangFix: 1
-RGTypography: 6
-RGUpdateActivity: 1
-RGUpdateOpenSSL: 0
-RGUpdateSigner: 0
-RGVoiceMessages: 2
-RGWebAppExtensions: 1
-RGWebSettings: 1
-RGWebSettingsScheme: 1
-RGWebTranslation: 3
-SFSafariViewControllerPlus: 1
-SwiftSoup: 58
-Wrap: 1
+## OUTLINE submodules/TelegramUI/Components/LiquidLens/Sources/LiquidLensView.swift (817 lines)
+10: private final class RestingBackgroundView: UIVisualEffectView {
+16: static func colorMatrix(isDark: Bool) -> [Float32] {
+24: init() {
+41: func update(isDark: Bool) {
+65: private func lensViewIsLifted(_ lensView: UIView) -> Bool? {
+78: private func lensMoveCurve(_ animation: ComponentTransition.Animation) -> (duration: Double, progress: (Double) -> CGFloat)? {
+85: if #available(iOS 26.0, *), abs(duration - 0.3832) <= 0.0001 {
+110: private func makeLensKeyframeAnimation(keyPath: String, values: [Any], times: [Double], duration: Double, beginTime: Double, timeScale: Double) -> CAK
+120: if #available(iOS 15.0, *) {
+129: public final class LiquidLensView: UIView {
+130: public enum Kind {
+136: private struct Params: Equatable {
+147: init(size: CGSize, cornerRadius: CGFloat?, selectionOrigin: CGPoint, selectionSize: CGSize, inset: CGFloat, liftedInset: CGFloat, isDark: Bool, isLift
+160: private struct LensParams: Equatable {
+166: init(baseFrame: CGRect, inset: CGFloat, liftedInset: CGFloat, isLifted: Bool) {
+255: public init(kind: Kind, backgroundTintColor: GlassBackgroundView.TintColor = GlassBackgroundView.TintColor(kind: .panel)) {
+302: if #available(iOS 26.0, *) {
+416: public func setLiftedContainer(view: UIView) {
+423: public func update(size: CGSize, cornerRadius: CGFloat? = nil, selectionOrigin: CGPoint, selectionSize: CGSize, inset: CGFloat, liftedInset: CGFloat =
+431: private func update(transition: ComponentTransition) {
+438: private func lensBounds(params: LensParams, isLifted: Bool) -> CGRect {
+445: private func setLensBounds(_ bounds: CGRect) {
+454: private func updateLens(params: LensParams, transition: ComponentTransition) {
+484: private func setLensLifted(_ isLifted: Bool, params: LensParams, transition: ComponentTransition) {
+524: if #available(iOS 17.0, *) {
+545: private func scheduleUnlift(after delay: Double, transition: ComponentTransition) {
+567: private func cancelPendingUnlift() {
+573: private func moveLens(params: LensParams, transition: ComponentTransition) {
+592: private func beginLensAnimation() {
+597: private func endLensAnimation() {
+605: private func updateIsLensMoving(segment: LiquidLensPositionSegment, now: Double) {
+626: private func setFlexActive(_ isActive: Bool) {
+636: private func lensTimeScale() -> Double {
+640: private func lensTime() -> Double {
+648: private func setLensPosition(_ center: CGPoint, transition: ComponentTransition, replans: Bool, resetsMotion: Bool = false, resetsFlex: Bool = false) 
+680: private func lensVelocity(at time: Double) -> CGPoint {
+701: private func replanLens(now: Double, resetsMotion: Bool = false, resetsFlex: Bool = false) {
+739: private func update(params: Params, transition: ComponentTransition) {
+810: private func updateRestingBackgroundAlpha(transition: ComponentTransition) {
 
-## FULL build-system/check-regram-features.py (123 lines, showing 120)
+## GREP Display animationDurationFactor use
+-- submodules/Display/Source/CAAnimationUtils.swift:123
+               animation.timingFunction = CAMediaTimingFunction.init(name: .linear)
+               let k = Float(UIView.animationDurationFactor())
+-- submodules/Display/Source/CAAnimationUtils.swift:131
+               if !delay.isZero {
+                   animation.beginTime = self.convertTime(CACurrentMediaTime(), from: nil) + delay * UIView.animationDurationFactor()
+-- submodules/Display/Source/CAAnimationUtils.swift:148
+                   
+                   let k = Float(UIView.animationDurationFactor())
+-- submodules/Display/Source/CAAnimationUtils.swift:158
+                   if !delay.isZero {
+                       animation.beginTime = self.convertTime(CACurrentMediaTime(), from: nil) + delay * UIView.animationDurationFactor()
+-- submodules/Display/Source/CAAnimationUtils.swift:175
+                   
+                   let k = Float(UIView.animationDurationFactor())
+-- submodules/Display/Source/CAAnimationUtils.swift:185
+                   if !delay.isZero {
+                       animation.beginTime = self.convertTime(CACurrentMediaTime(), from: nil) + delay * UIView.animationDurationFactor()
+-- submodules/Display/Source/CAAnimationUtils.swift:193
+               } else {
+                   let k = Float(UIView.animationDurationFactor())
+-- submodules/Display/Source/CAAnimationUtils.swift:215
+                   if !delay.isZero {
+                       animation.beginTime = self.convertTime(CACurrentMediaTime(), from: nil) + delay * UIView.animationDurationFactor()
+-- submodules/Display/Source/CAAnimationUtils.swift:224
+           } else {
+               let k = Float(UIView.animationDurationFactor())
+-- submodules/Display/Source/CAAnimationUtils.swift:254
+               if !delay.isZero {
+                   animation.beginTime = self.convertTime(CACurrentMediaTime(), from: nil) + delay * UIView.animationDurationFactor()
+-- submodules/Display/Source/CAAnimationUtils.swift:288
+       func animateKeyframes(values: [AnyObject], keyTimes: [NSNumber]? = nil, duration: Double, keyPath: String, timingFunction: String = CAMediaTimingF
+           let k = Float(UIView.animationDurationFactor())
+-- submodules/Display/Source/CAAnimationUtils.swift:337
+           
+           let k = Float(UIView.animationDurationFactor())
+-- submodules/Display/Source/CAAnimationUtils.swift:344
+           if !delay.isZero {
+               animation.beginTime = self.convertTime(CACurrentMediaTime(), from: nil) + delay * UIView.animationDurationFactor()
+-- submodules/Display/Source/CAAnimationUtils.swift:367
+           
+           let k = Float(UIView.animationDurationFactor())
+-- submodules/Display/Source/CAAnimationUtils.swift:374
+           if !delay.isZero {
+               animation.beginTime = self.convertTime(CACurrentMediaTime(), from: nil) + delay * UIView.animationDurationFactor()
+-- submodules/Display/Source/CAAnimationUtils.swift:387
+       func animateAdditive(from: NSValue, to: NSValue, keyPath: String, key: String, timingFunction: String, mediaTimingFunction: CAMediaTimingFunction?
+           let k = Float(UIView.animationDurationFactor())
+-- submodules/Display/Source/ListView.swift:1874
+                   }
+                   updateAnimation = .System(duration: duration * UIView.animationDurationFactor(), transition: customAnimationTransition)
+-- submodules/Display/Source/ListView.swift:1879
+                   } else if updateAnimationIsAnimated {
+                       let transition = ControlledTransition(duration: insertionAnimationDuration * UIView.animationDurationFactor(), curve: .spring, int
+-- submodules/Display/Source/ListView.swift:1881
+                       controlledTransition = transition
+                       updateAnimation = .System(duration: insertionAnimationDuration * UIView.animationDurationFactor(), transition: transition)
+-- submodules/Display/Source/ListView.swift:2355
+                               }
+                               updateAnimation = .System(duration: duration * UIView.animationDurationFactor(), transition: customAnimationTransition)
+-- submodules/Display/Source/ListView.swift:2358
+                               if animated {
+                                   let transition = ControlledTransition(duration: insertionAnimationDuration * UIView.animationDurationFactor(), curve: 
+-- submodules/Display/Source/ListView.swift:2360
+                                   controlledTransition = transition
+                                   updateAnimation = .System(duration: insertionAnimationDuration * UIView.animationDurationFactor(), transition: transit
+-- submodules/Display/Source/ListView.swift:2584
+                           if abs(layout.size.height - previousApparentHeight) > CGFloat.ulpOfOne {
+                               node.addApparentHeightAnimation(layout.size.height, duration: (node.updateAnimationDuration() ?? insertionAnimationDuratio
+-- submodules/Display/Source/ListView.swift:2591
+                                   node.transitionOffset += previousApparentHeight - layout.size.height
+                                   node.addTransitionOffsetAnimation(0.0, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIVi
+-- submodules/Display/Source/ListView.swift:2608
+               if node.animationForKey("height") == nil || !(node is ListViewTempItemNode) {
+                   node.addHeightAnimation(0.0, duration: duration * UIView.animationDurationFactor(), beginAt: timestamp)
+-- submodules/Display/Source/ListView.swift:2611
+               if node.animationForKey("apparentHeight") == nil || !(node is ListViewTempItemNode) {
+                   node.addApparentHeightAnimation(0.0, duration: duration * UIView.animationDurationFactor(), beginAt: timestamp, invertOffsetDirection:
+-- submodules/Display/Source/ListView.swift:2618
+               if !hasCustomRemoveAnimation {
+                   node.animateRemoved(timestamp, duration: duration * UIView.animationDurationFactor())
+-- submodules/Display/Source/ListView.swift:2633
+                       }
+                       node.addTransitionOffsetAnimation(0.0, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.animation
+-- submodules/Display/Source/ListView.swift:2636
+                           node.insets = previousInsets
+                           node.addInsetsAnimationToValue(layout.insets, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIVie
+-- submodules/Display/Source/ListView.swift:2642
+                       let addAnimation = previousFrame?.height != nodeFrame.size.height
+                       node.addApparentHeightAnimation(nodeFrame.size.height, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * 
+-- submodules/Display/Source/ListView.swift:2660
+                       }
+                       node.addTransitionOffsetAnimation(0.0, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.animation
+-- submodules/Display/Source/ListView.swift:2663
+                           node.insets = previousInsets
+                           node.addInsetsAnimationToValue(layout.insets, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIVie
+-- submodules/Display/Source/ListView.swift:2672
+                               node.transitionOffset += node.insets.top
+                               node.addTransitionOffsetAnimation(0.0, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.a
+-- submodules/Display/Source/ListView.swift:2675
+                       }
+                       node.animateInsertion(timestamp, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDurati
+-- submodules/Display/Source/ListView.swift:2681
+                   if forceAnimateInsertion {
+                       node.animateInsertion(timestamp, duration: (node.insertionAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDur
+-- submodules/Display/Source/ListView.swift:2686
+                   } else {
+                       node.animateAdded(timestamp, duration: (node.insertionAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDuratio
+-- submodules/Display/Source/ListView.swift:3114
+                               node.insets = previousInsets
+                               node.addInsetsAnimationToValue(updatedInsets, duration: insertionAnimationDuration * UIView.animationDurationFactor(), beg
+-- submodules/Display/Source/ListView.swift:3120
+                               if let currentAnimation = currentAnimation, let toFloat = currentAnimation.to as? CGFloat, toFloat.isEqual(to: updatedAppa
+                                   /*node.addApparentHeightAnimation(updatedApparentHeight, duration: insertionAnimationDuration * UIView.animationDurati
+-- submodules/Display/Source/ListView.swift:3125
+                                   })
+                                   node.addTransitionOffsetAnimation(0.0, duration: insertionAnimationDuration * UIView.animationDurationFactor(), beginA
+-- submodules/Display/Source/ListView.swift:3129
+                                   node.animateFrameTransition(0.0, previousApparentHeight)
+                                   node.addApparentHeightAnimation(updatedApparentHeight, duration: insertionAnimationDuration * UIView.animationDuration
+...cut
+
+## submodules/Display/Source/NavigationController.swift
+(MISSING)
+
+## GREP navigation durations
+-- submodules/Display/Source/ActionSheetItemGroupNode.swift:79
+           
+           let transition = ContainedViewLayoutTransition.animated(duration: 0.3, curve: .linear)
+-- submodules/Display/Source/AlertControllerNode.swift:116
+           if let previousNode = self.existingAlertControllerNode {
+               let transition =  ContainedViewLayoutTransition.animated(duration: 0.3, curve: .spring)
+-- submodules/Display/Source/ListView.swift:3332
+           if let scrollToItem = scrollToItem, scrollToItem.animated {
+               offsetTransition = .animated(duration: 0.3, curve: .easeInOut)
+-- submodules/Display/Source/ListView.swift:3560
+           if let scrollToItem = scrollToItem, scrollToItem.animated {
+               accessoryNodesTransition = .animated(duration: 0.3, curve: .easeInOut)
+-- submodules/Display/Source/ListView.swift:4178
+                               if !previousFrame.isEmpty {
+                                   ContainedViewLayoutTransition.animated(duration: 0.35, curve: .spring).animatePositionAdditive(node: headerNode, offse
+-- submodules/Display/Source/ListView.swift:5156
+       public func updateNodeHighlightsAnimated(_ animated: Bool) {
+           let transition: ContainedViewLayoutTransition = animated ? .animated(duration: 0.35, curve: .spring) : .immediate
+-- submodules/Display/Source/StatusBar.swift:67
+               self._statusBarStyle = statusBarStyle
+               self.alphaUpdated?(animated ? .animated(duration: 0.3, curve: .easeInOut) : .immediate)
+-- submodules/Display/Source/WindowContent.swift:646
+                   
+                   let transition: ContainedViewLayoutTransition = .animated(duration: 0.35, curve: .easeInOut)
+-- submodules/Display/Source/WindowContent.swift:1011
+       
+       public func setForceInCallStatusBar(_ forceInCallStatusBarText: String?, transition: ContainedViewLayoutTransition = .animated(duration: 0.3, curv
+-- submodules/Display/Source/WindowContent.swift:1150
+           let onlyDivisionChanged = self.updatingLayout == nil && reservedArea.safeInsets == current.reservedArea.safeInsets && reservedArea.reservedCor
+           let transition: ContainedViewLayoutTransition = onlyDivisionChanged ? .animated(duration: 0.3, curve: .spring) : .immediate
+-- submodules/Display/Source/WindowContent.swift:1283
+                           
+                           navigationController.updateExternalStatusBarHidden(isStatusBarHidden, transition: .animated(duration: 0.3, curve: .easeInOut))
+-- submodules/Display/Source/Navigation/NavigationContainer.swift:108
+                       self.view.endEditing(true)
+                       self.performUpdate(transition: .animated(duration: 0.5, curve: .spring))
+-- submodules/Display/Source/Navigation/NavigationContainer.swift:859
+                               self.statusBarStyle = target
+                               self.statusBarStyleUpdated?(.animated(duration: 0.3, curve: .easeInOut))
+-- submodules/Display/Source/Navigation/NavigationContainer.swift:1112
+               self.statusBarStyle = updatedStatusBarStyle
+               self.statusBarStyleUpdated?(.animated(duration: 0.3, curve: .easeInOut))
+-- submodules/Display/Source/Navigation/NavigationController.swift:194
+                   self.isMaximizing = true
+                   self.updateContainersNonReentrant(transition: .animated(duration: 0.4, curve: .spring))
+-- submodules/Display/Source/Navigation/NavigationController.swift:201
+                   self.minimizedContainer = nil
+                   self.updateContainersNonReentrant(transition: .animated(duration: 0.4, curve: .spring))
+-- submodules/Display/Source/Navigation/NavigationController.swift:210
+                   }
+                   self.updateContainersNonReentrant(transition: .animated(duration: 0.3, curve: .easeInOut))
+-- submodules/Display/Source/Navigation/NavigationController.swift:656
+                           }
+                           strongSelf.updateContainersNonReentrant(transition: .animated(duration: 0.5, curve: .spring))
+-- submodules/Display/Source/Navigation/NavigationController.swift:1801
+           if let layout = self.validLayout {
+               self.updateContainers(layout: layout, transition: animated ? .animated(duration: 0.5, curve: .spring) : .immediate, completion: { [weak se
+-- submodules/Display/Source/Navigation/NavigationController.swift:1812
+       public func minimizeViewController(_ viewController: MinimizableController, topEdgeOffset: CGFloat? = nil, damping: CGFloat? = nil, velocity: CGFl
+           let transition: ContainedViewLayoutTransition = animated ? .animated(duration: 0.4, curve: .customSpring(damping: damping ?? 124.0, initialVel
+-- submodules/Display/Source/Navigation/NavigationController.swift:1833
+               self.isMaximizing = true
+               self.updateContainersNonReentrant(transition: .animated(duration: 0.4, curve: .spring))
+-- submodules/Display/Source/Navigation/NavigationController.swift:1863
+           })
+           self.updateContainersNonReentrant(transition: animated ? .animated(duration: 0.4, curve: .spring) : .immediate)
+-- submodules/Display/Source/Navigation/NavigationController.swift:2026
+       
+       public func setForceInCallStatusBar(_ forceInCallStatusBar: CallStatusBarNode?, transition: ContainedViewLayoutTransition = .animated(duration: 0.
+-- submodules/Display/Source/Navigation/NavigationModalContainer.swift:205
+                   self.dismissProgress = 1.0
+                   let transition: ContainedViewLayoutTransition = .animated(duration: 0.5, curve: .spring)
+-- submodules/Display/Source/Navigation/NavigationModalContainer.swift:320
+               targetOffset = self.bounds.height
+               transition = .animated(duration: 0.5, curve: .spring)
+...cut
+
+## OUTLINE submodules/TelegramUI/Sources/AppDelegate.swift (3778 lines)
+74: #if DEBUG
+80: private func isTonTransferUrl(_ url: URL) -> Bool {
+87: private func isKeyboardWindow(window: NSObject) -> Bool {
+89: if #available(iOS 9.0, *) {
+101: private func isKeyboardView(view: NSObject) -> Bool {
+112: private func isKeyboardViewContainer(view: NSObject) -> Bool {
+123: private class ApplicationStatusBarHost: StatusBarHost {
+126: init(scene: UIWindowScene?) {
+190: private func legacyDocumentsPath() -> String {
+194: protocol SupportedStartCallIntent {
+195: @available(iOS 10.0, *)
+199: extension INStartCallIntent: SupportedStartCallIntent {}
+201: protocol SupportedStartVideoCallIntent {
+202: @available(iOS 10.0, *)
+206: private enum QueuedWakeup: Int32 {
+211: final class SharedApplicationContext {
+218: init(sharedContext: SharedAccountContextImpl, notificationManager: SharedNotificationManager, wakeupManager: SharedWakeupManager) {
+226: private struct AccountManagerState {
+227: struct NotificationKey {
+236: private func extractAccountManagerState(records: AccountRecordsView<TelegramAccountManagerTypes>) -> AccountManagerState {
+330: private func urlSession(identifier: String) -> URLSession {
+373: func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+458: if #available(iOS 13.0, *) {
+495: if #available(iOS 10.0, *) {
+545: if #available(iOS 10.0, *) {
+559: if #available(iOS 10.0, *) {
+583: if #available(iOS 10.0, *) {
+618: if #available(iOS 10.0, *) {
+641: #if DEBUG
+745: #if DEBUG
+868: if #available(iOS 10.0, *) {
+946: if #available(iOS 10.0, *) {
+1032: if #available(iOS 15, *), let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+1058: if buildConfig.isSiriEnabled, rgSignatureGrants(RGEntitlement.siri), #available(iOS 10, *) {
+1071: if #available(iOS 10, *) {
+1100: if #available(iOS 10.3, *) {
+1107: guard #available(iOS 10.3, *) else {
+1115: if #available(iOSApplicationExtension 16.0, iOS 16.0, *) {
+1183: if #available(iOS 9.0, *) {
+1196: if #available(iOS 13.0, *) {
+1260: #if targetEnvironment(simulator)
+1507: #if DEBUG
+1525: if #available(iOS 10.0, *) {
+1538: if #available(iOS 13.0, *) {
+1627: if #available(iOS 13.0, *) {
+1666: if #available(iOS 9.1, *) {
+1737: if #available(iOS 13.0, *) {
+1784: if #available(iOS 12.0, *) {
+1803: if #available(iOS 13.0, *) {
+1881: func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) 
+1892: func attach(scene: UIWindowScene, connectionOptions: UIScene.ConnectionOptions) {
+1943: func uploadInBackround(postbox: Postbox, resource: MediaResource) -> Signal<String?, NoError> {
+2016: private func addBackgroundUploadTask(id: String, path: String) {
+2071: private func addBackgroundDownloadTask() {
+2084: func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+2099: private func runCacheReindexTasks(lowImpact: Bool, completion: @escaping () -> Void) -> Disposable {
+2123: private func resetBadge() {
+2144: func handleWillResignActive() {
+2173: func handleDidEnterBackground() {
+2180: if #available(iOS 9.0, *) {
+2204: final class TaskIdHolder {
+2222: func handleWillEnterForeground() {
+2229: if #available(iOSApplicationExtension 12.0, *) {
+2242: func runForegroundTasks() {
+2266: func handleDidBecomeActive() {
+2308: func cancelWindowPanGestures(view: UIView) {
+2325: func applicationWillTerminate(_ application: UIApplication) {
+2329: func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+2334: func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+2338: func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @
+2404: public func pushRegistry(_ registry: PKPushRegistry, didUpdate credentials: PKPushCredentials, for type: PKPushType) {
+2405: if #available(iOS 9.0, *) {
+2414: public func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping ()
+2420: public func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType) {
+2426: private func pushRegistryImpl(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escapi
+2725: public func pushRegistry(_ registry: PKPushRegistry, didInvalidatePushTokenFor type: PKPushType) {
+2729: private func reportFailedIncomingCallKitCall() {
+2730: if #available(iOS 14.4, *) {
+2758: private func authorizedContext() -> Signal<AuthorizedApplicationContext, NoError> {
+2769: func handleOpenURL(_ url: URL) {
+2776: private func presentWalletUnavailable(in context: AuthorizedApplicationContext) {
+2781: #if DEBUG
+2786: private func runCommentsCacheResetLaunchArguments(context: AccountContext) {
+2788: func value(after flag: String) -> String? {
+2827: private func openUrl(url: URL) {
+2887: if #available(iOS 10.0, *) {
+2903: func cleanPhoneNumber(_ text: String) -> String {
+2917: func matchPhoneNumbers(_ lhs: String, _ rhs: String) -> Bool {
+3053: func handleShortcutItem(_ shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
+3096: private func openNotificationSettingsWhenReady() {
+3104: private func startCallWhenReady(accountId: AccountRecordId?, peerId: PeerId, isVideo: Bool) {
+3126: private func openChatWhenReady(accountId: AccountRecordId?, peerId: PeerId, threadId: Int64?, messageId: MessageId? = nil, activateInput: Bool = false
+3160: private func openNextWalletTonConnectNotification() {
+3195: private func openUrlWhenReady(accountId: AccountRecordId? = nil, url: URL, external: Bool = false) {
+3238: func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: 
+3342: func requestNotificationTokenInvalidation() {
+3349: private func registerForNotifications(context: AccountContextImpl, authorize: Bool = true, completion: @escaping (Bool) -> Void = { _ in }) {
+3360: private func registerForNotifications(replyString: String, messagePlaceholderString: String, hiddenContentString: String, hiddenReactionContentString:
+3369: if #available(iOS 12.0, *) {
+3435: @available(iOS 10.0, *)
+3436: func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @es
+3465: @available(iOS 12.0, *)
+3466: func userNotificationCenter(_ center: UNUserNotificationCenter, openSettingsFor notification: UNNotification?) {
+3470: func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String, completionHandler: @escaping () -> Void) {
+3484: private func maybeCheckForUpdates() {
+3485: #if targetEnvironment(simulator)
+3554: @objc func debugPressed() {
+3568: private func resetIntentsIfNeeded(context: AccountContextImpl) {
+3575: if self.buildConfig?.isSiriEnabled ?? false, rgSignatureGrants(RGEntitlement.siri), #available(iOS 10.0, *) {
+3588: private func notificationPayloadKey(data: Data) -> Data? {
+3595: @available(iOS 10.0, *)
+3596: private func accountIdFromNotification(_ notification: UNNotification, sharedContext: Signal<SharedApplicationContext, NoError>) -> Signal<AccountReco
+3656: @available(iOS 10.0, *)
+3657: private func peerIdFromNotification(_ notification: UNNotification) -> (peerId: PeerId, threadId: Int64?)? {
+3689: private func messageIdFromNotification(peerId: PeerId, notification: UNNotification) -> MessageId? {
+3702: private func storyIdFromNotification(peerId: PeerId, notification: UNNotification) -> StoryId? {
+3711: private enum DownloadFileError {
+3715: private func downloadHTTPData(url: URL) -> Signal<Data, DownloadFileError> {
+3737: private func getMemoryConsumption() -> Int {
+3756: final class UpdateSettings: Codable, Equatable {
+3759: init(url: String?) {
+3763: static func ==(lhs: UpdateSettings, rhs: UpdateSettings) -> Bool {
+3768: private final class NavigationBarOverflowMenuReferenceSource: ContextReferenceContentSource {
+3771: init(sourceView: UIView) {
+3775: func transitionInfo() -> ContextControllerReferenceViewInfo? {
+
+## GREP startup delays/timers
+-- submodules/TelegramUI/Sources/AppDelegate.swift:1262
+               if CommandLine.arguments.contains("--context-menu-morph-gallery") {
+                   DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+                       self?.mainWindow.present(ContextMenuMorphDebugController(), on: .root)
+-- submodules/TelegramUI/Sources/AppDelegate.swift:1585
+                       |> deliverOnMainQueue).start(completed: {
+                           Queue.mainQueue().after(0.75) {
+                               authContextValue.rootController.view.endEditing(true)
+-- submodules/TelegramUI/Sources/AppDelegate.swift:1791
+           var previousReportedMemoryConsumption = 0
+           let _ = Foundation.Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true, block: { _ in
+               let value = getMemoryConsumption()
+-- submodules/TelegramUI/Sources/AppDelegate.swift:2215
+           })
+           DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 5.0, execute: {
+               if let taskId = taskIdHolder.taskId {
+-- submodules/TelegramUI/Sources/AppDelegate.swift:2286
+               for delay in [0.25, 1.0] {
+                   DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                       guard self?.isInForegroundValue == true, RGNotificationExperiment.isEnabled else { return }
+-- submodules/TelegramUI/Sources/AppDelegate.swift:2752
+               )
+               Queue.mainQueue().after(1.0, {
+                   callKitIntegration.dropCall(uuid: uuid)
+-- submodules/TelegramUI/Sources/AppDelegate.swift:3232
+               
+               Queue.mainQueue().after(1.0, {
+                   self?.openUrlInProgress = nil
+-- submodules/TelegramUI/Sources/AppDelegate.swift:3344
+           UIApplication.shared.unregisterForRemoteNotifications()
+           DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 1.0, execute: {
+               UIApplication.shared.registerForRemoteNotifications()
+-- submodules/TelegramUI/Sources/ApplicationContext.swift:778
+                           if !didAppear {
+                               Queue.mainQueue().after(0.15, {
+                                   (strongSelf.rootController.viewControllers.last as? ViewController)?.present(controller, in: .window(.root), with: Vie
+-- submodules/TelegramUI/Sources/ChatCameraFlow.swift:567
+           })
+           Queue.mainQueue().after(1.5) { [weak self] in
+               guard let self, self.isSending, self.sendAttempt == attempt else {
+-- submodules/TelegramUI/Sources/ChatController.swift:940
+                   self.present(contextController, in: .window(.root))
+                   Queue.mainQueue().after(0.15) {
+                       contextController.dismiss(result: .dismissWithoutContent, completion: nil)
+-- submodules/TelegramUI/Sources/ChatController.swift:952
+                   if self.presentVoiceMessageDiscardAlert(action: { [weak self] in
+                       Queue.mainQueue().after(0.1, {
+                           guard let self else {
+-- submodules/TelegramUI/Sources/ChatController.swift:1279
+                                       let controller = self.context.sharedContext.makeGiftViewScreen(context: self.context, gift: uniqueGift, shareStory
+                                           Queue.mainQueue().after(0.15) {
+                                               if let self {
+-- submodules/TelegramUI/Sources/ChatController.swift:1287
+                                           if let self {
+                                               Queue.mainQueue().after(0.15) {
+                                                   self.presentThemeSelection()
+-- submodules/TelegramUI/Sources/ChatController.swift:1345
+                                   |> deliverOnMainQueue).startStandalone()
+                                   Queue.mainQueue().after(0.1) {
+                                       wallpaperPreviewController?.dismiss()
+-- submodules/TelegramUI/Sources/ChatController.swift:1363
+                                   let controller = self.context.sharedContext.makeGiftViewScreen(context: self.context, message: EngineMessage(message),
+                                       Queue.mainQueue().after(0.15) {
+                                           if let self {
+-- submodules/TelegramUI/Sources/ChatController.swift:1532
+                               let controller = self.context.sharedContext.makeGiftViewScreen(context: self.context, message: EngineMessage(message), sha
+                                   Queue.mainQueue().after(0.15) {
+                                       if let self {
+-- submodules/TelegramUI/Sources/ChatController.swift:1801
+                                           self?.present(c, in: .window(.root), with: a)
+                                           Queue.mainQueue().after(0.35) {
+                                               transitionCompletion()
+-- submodules/TelegramUI/Sources/ChatController.swift:2462
+                   let text = strongSelf.presentationData.strings.VoiceOver_Chat_MessagesSelected(Int32(count))
+                   DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.1, execute: {
+                       UIAccessibility.post(notification: UIAccessibility.Notification.announcement, argument: text as NSString)
+-- submodules/TelegramUI/Sources/ChatController.swift:2792
+                               
+                               Queue.mainQueue().after(0.5, {
+                                   strongSelf.displayEmojiTooltip()
+-- submodules/TelegramUI/Sources/ChatController.swift:4353
+                       if controllerInteraction.pollActionState.pollMessageIdsInProgress.removeValue(forKey: id) != nil {
+                           Queue.mainQueue().after(1.0, {
+                               strongSelf.chatDisplayNode.historyNode.requestMessageUpdate(id)
+-- submodules/TelegramUI/Sources/ChatController.swift:4398
+                       if controllerInteraction.pollActionState.pollMessageIdsInProgress.removeValue(forKey: id) != nil {
+                           Queue.mainQueue().after(1.0, {
+                               strongSelf.chatDisplayNode.historyNode.requestMessageUpdate(id)
+-- submodules/TelegramUI/Sources/ChatController.swift:7022
+                                       
+                                       Queue.mainQueue().after(1.0, {
+                                           theme.forceSync = false
+-- submodules/TelegramUI/Sources/ChatController.swift:7035
+                                   
+                                   Queue.mainQueue().after(1.0, {
+                                       theme.forceSync = false
+-- submodules/TelegramUI/Sources/ChatController.swift:7046
+                           previewTheme.forceSync = true
+                           Queue.mainQueue().after(1.0, {
+                               previewTheme.forceSync = false
+...cut
+
+## FULL build-system/check-regram-story-flags.py (59 lines, showing 59)
 1: #!/usr/bin/env python3
-2: """Run account-free Regram regressions on macOS, without starting a simulator or publishing."""
-3: import argparse
-4: import json
-5: import subprocess
-6: import time
-7: from pathlib import Path
-8: 
-9: ROOT = Path(__file__).resolve().parents[1]
-10: 
-11: 
-12: def main():
-13:     parser = argparse.ArgumentParser(description=__doc__)
-14:     parser.add_argument('--output', type=Path, default=ROOT / 'build-input/local-feature-checks')
-15:     args = parser.parse_args()
-16:     output = args.output.resolve()
-17:     output.mkdir(parents=True, exist_ok=True)
-18:     results = []
-19: 
-20:     def run(name, command):
-21:         begin = time.monotonic()
-22:         try:
-23:             result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=180)
-24:             text = result.stdout + result.stderr
-25:             code = result.returncode
-26:         except subprocess.TimeoutExpired:
-27:             text, code = 'Check exceeded 180 seconds.\n', 124
-28:         (output / (name + '.log')).write_text(text)
-29:         results.append({'check': name, 'passed': code == 0, 'seconds': round(time.monotonic() - begin, 3), 'log': name + '.log'})
-30:         print(f'{name}: {"PASS" if code == 0 else "FAIL"}', flush=True)
-31:         return code == 0
-32: 
-33:     simple = 'Regram/RGSimpleSettings/'
-34:     content_filter = (ROOT / 'submodules/AccountContext/Sources/RGContentFilter.swift').read_text()
-35:     content_filter = content_filter[:content_filter.index('/// Emits on every message-filter')]
-36:     for module in ['SwiftSignalKit', 'TelegramCore', 'RGSimpleSettings']:
-37:         content_filter = content_filter.replace('import ' + module + '\n', '')
-38:     content_source = output / 'ProductionContentFilter.swift'
-39:     content_source.write_text(content_filter)
-40:     suites = [
-41:         ('quote-selection', [simple+'Sources/RGFeaturePangu.swift', simple+'Sources/RGMessageQuoteSelection.swift', simple+'Tests/MessageQuoteSelectionTests.swift'], []),
-42:         ('local-gifts', [simple+'Sources/LocalGifts.swift', simple+'Tests/LocalGiftsTests.swift'], []),
-43:         ('filter', [simple+'Sources/MessageFilter.swift', simple+'Tests/MessageFilterTests.swift'], []),
-44:         ('diagnostics', [simple+'Sources/MessageFilter.swift', simple+'Sources/TransferStatistics.swift', simple+'Sources/FilterBenchmark.swift', simple+'Tests/Diagnostic
-45:         ('content-filter-cache', [simple+'Sources/MessageFilter.swift', simple+'Sources/GroupMemberSelection.swift', str(content_source), simple+'Tests/ContentFilterState
-46:         ('translation', ['Regram/RGGTranslate/Sources/RGTranslationLinkPlan.swift', 'Regram/RGGTranslate/Tests/LinkPlanTests.swift'], []),
-47:         ('datacenter-statistics', [simple+'Sources/RGDatacenterStatistics.swift', simple+'Tests/DatacenterStatisticsTests.swift'], []),
-48:         ('bottom-bar', [simple+'Sources/RGBottomBarSettings.swift', simple+'Sources/TabBarLayoutPolicy.swift', simple+'Sources/RGDatacenterLocation.swift', simple+'Tests/
-49:         ('appearance', [simple+'Sources/TabBarLayoutPolicy.swift', simple+'Sources/FontSettings.swift', simple+'Tests/AppearancePolicyTests.swift'], []),
-50:         ('mentions', [simple+'Sources/MentionReplacementPolicy.swift', simple+'Sources/FontSettings.swift', simple+'Tests/MentionReplacementPolicyTests.swift'], []),
-51:         ('media-notifications', [simple+'Sources/'+name+'.swift' for name in ['MediaLoadingPolicy', 'MessageProcessingPolicy', 'VideoLoadingPolicy', 'VideoQualityPolicy',
-52:         ('media-experiment-default', [simple+'Sources/'+name+'.swift' for name in ['MediaLoadingPolicy', 'MessageProcessingPolicy', 'VideoLoadingPolicy', 'VideoQualityPol
-53:         ('font-cascade', ['Regram/RGTypography/Sources/RGFontCascade.swift', 'Regram/RGTypography/Tests/FontCascadeTests.swift'], ['Regram/RGTypography/Fonts']),
-54:         ('settings-catalog', ['Regram/RGStrings/Sources/RGSettingsLink.swift', 'Regram/RGStrings/Sources/RGSettingsCatalog.swift', 'Regram/RGStrings/Sources/RGProSearchIn
-55:         ('settings-search', ['Regram/RGStrings/Sources/RGProSearchIndex.swift', 'Regram/RGStrings/Tests/SettingsSearchTests.swift'], ['Regram/RGStrings/Strings']),
-56:         ('local-app-links', ['Regram/RGSettingsUI/Sources/RGLocalAppLink.swift', 'Regram/RGSettingsUI/Tests/LocalAppLinkTests.swift'], []),
-57:         ('common-group-search-policy', ['Regram/RGCommonGroupMessagesUI/Sources/RGCommonGroupSearchPolicy.swift', 'Regram/RGCommonGroupMessagesUI/Tests/SearchPolicyTests.
-58:     ]
-59:     for name, sources, arguments in suites:
-60:         binary = output / name
-61:         # Debug assertion configuration is intentional: the translation suite uses assert().
-62:         flags = ['-DREGRAM_MEDIA_LOADING_EXPERIMENT'] if name == 'media-experiment-default' else []
-63:         if run(name+'-compile', ['xcrun', 'swiftc', '-swift-version', '5', '-warnings-as-errors'] + flags + sources + ['-o', str(binary)]):
-64:             run(name, [str(binary)] + arguments)
-65:     run('rich-message-tools', ['python3', 'Regram/RGProUI/Tests/run-rich-message-checks.py'])
-66:     run('rich-edit-history-codec', ['python3', 'Regram/RGProUI/Tests/run-edit-history-checks.py'])
-67:     run('translation-chunk-sequencing', ['python3', 'Regram/RGGTranslate/Tests/run-chunk-sequencing-checks.py'])
-68:     run('summary-range-failures', ['python3', 'Regram/RGProUI/Tests/run-summary-range-checks.py'])
-69:     run('message-retention', ['python3', 'build-system/check-regram-retention.py'])
-70:     run('story-flag-persistence', ['python3', 'build-system/check-regram-story-flags.py'])
-71:     run('local-gift-boundary', ['python3', 'Regram/RGLocalGifts/Tests/run-boundary-checks.py'])
-72:     run('local-phone-display', ['python3', 'Regram/RGLocalGifts/Tests/run-phone-display-checks.py'])
-73:     run('local-profile-projection', ['python3', 'Regram/RGLocalGifts/Tests/run-profile-projection-checks.py'])
-74:     run('local-appearance-projection', ['python3', 'Regram/RGLocalGifts/Tests/run-appearance-projection-checks.py'])
-75:     run('localization-manager', ['python3', 'Regram/RGStrings/Tests/run-localization-checks.py'])
-76:     run('settings-search-transitions', ['python3', 'Regram/RGProUI/Tests/run-settings-search-checks.py'])
-77:     run('common-group-pagination', ['python3', 'Regram/RGCommonGroupMessagesUI/Tests/run-search-failure-checks.py'])
-78:     run('anti-revoke-senders', ['python3', 'Regram/RGSimpleSettings/Tests/run-anti-revoke-checks.py'])
-79:     run('font-store', ['python3', 'Regram/RGTypography/Tests/run-store-checks.py'])
-80:     run('common-group-table-navigation', ['python3', 'Regram/RGCommonGroupMessagesUI/Tests/run-table-navigation-checks.py'])
-81:     run('settings-focus', ['python3', 'Regram/RGSettingsUI/Tests/run-settings-focus-checks.py'])
-82:     run('group-member-ui-flow', ['python3', 'Regram/RGSettingsUI/Tests/run-group-member-ui-checks.py'])
-83:     run('settings-import-menu', ['python3', 'Regram/RGSettingsUI/Tests/run-settings-import-menu-checks.py'])
-84:     run('startup-folder', ['python3', 'Regram/RGSettingsUI/Tests/run-startup-folder-checks.py'])
-85:     run('settings-row-touch', ['python3', 'Regram/RGSettingsUI/Tests/run-settings-row-touch-checks.py'])
-86:     run('root-settings-gesture', ['python3', 'Regram/RGSimpleSettings/Tests/run-root-settings-gesture-checks.py'])
-87:     run('root-tab-transition', ['python3', 'Regram/RGSimpleSettings/Tests/run-root-tab-transition-checks.py'])
-88:     run('navigation-capsules', ['python3', 'Regram/RGSimpleSettings/Tests/run-navigation-capsule-checks.py'])
-89:     run('profile-navigation-colors', ['python3', 'Regram/RGSettingsUI/Tests/run-profile-navigation-color-checks.py'])
-90:     run('settings-runtime', ['python3', 'Regram/RGSimpleSettings/Tests/run-settings-runtime-checks.py'])
-91:     run('group-member-notifications', ['python3', 'Regram/RGSimpleSettings/Tests/run-group-notification-checks.py'])
-92:     run('chat-action-policies', ['python3', 'Regram/RGSimpleSettings/Tests/run-chat-action-checks.py'])
-93:     run('remark-search', ['python3', 'Regram/RGSimpleSettings/Tests/run-group-remark-search-checks.py'])
-94:     run('search-typing', ['python3', 'Regram/RGSimpleSettings/Tests/run-search-typing-checks.py'])
-95:     run('search-rendering', ['python3', 'Regram/RGSimpleSettings/Tests/run-search-rendering-checks.py'])
-96:     run('ui-cache-regressions', ['python3', 'Regram/RGSimpleSettings/Tests/run-ui-cache-regression-checks.py'])
-97:     run('tab-selection-regressions', ['python3', 'Regram/RGSimpleSettings/Tests/run-tab-selection-checks.py'])
-98:     run('native-photo-regressions', ['python3', 'Regram/RGSimpleSettings/Tests/run-native-photo-checks.py'])
-99:     run('permission-warning-badges', ['python3', 'Regram/RGFeatureSignals/Tests/run-permission-warning-checks.py'])
-100:     run('llm-endpoint-urls', ['python3', 'Regram/RGGTranslate/Tests/run-url-checks.py'])
-101:     run('transcription-routing', ['python3', 'Regram/RGTranscription/Tests/run-routing-checks.py'])
-102:     run('visible-mention-reads', ['python3', 'Regram/RGChatHistoryProcessing/Tests/run-visible-read-checks.py'])
-103:     run('filtered-mention-reads', ['python3', 'Regram/RGChatHistoryProcessing/Tests/run-filtered-mention-checks.py'])
-104:     run('settings-storage', ['python3', 'Regram/RGAppGroupIdentifier/Tests/run-storage-checks.py'])
-105:     run('build-configuration', ['python3', 'build-system/ci/test_configuration.py'])
-106:     run('gallery-playback', ['python3', 'Regram/RGGalleryUI/Tests/run-playback-checks.py'])
-107:     run('album-video-duration', ['python3', 'Regram/RGGalleryUI/Tests/run-album-duration-checks.py'])
-108:     run('gallery-media-save', ['python3', 'Regram/RGGalleryUI/Tests/run-save-checks.py'])
-109:     run('local-pinned-chats', ['python3', 'Regram/RGSimpleSettings/Tests/run-local-pinned-chats-checks.py'])
-110:     run('search-links', ['python3', 'Regram/RGSearchLink/Tests/run-search-link-checks.py'])
-111:     run('inline-bot-queries', ['python3', 'Regram/RGLinkMetadata/Tests/run-inline-query-checks.py'])
-112:     run('invite-revocation', ['python3', 'Regram/RGSimpleSettings/Tests/run-invite-revocation-checks.py'])
-113:     run('revoked-history', ['python3', 'Regram/RGProUI/Tests/run-archive-checks.py'])
-114:     run('localizations', ['plutil', '-lint'] + [f'Regram/RGStrings/Strings/{lang}.lproj/RGLocalizable.strings' for lang in ['en', 'zh-Hans', 'zh-Hant']])
-115:     run('release-offline-mocks', ['python3', 'build-system/ci/test_release.py'])
-116:     run('patch-format', ['git', 'diff', '--check'])
-117:     report = {'scope': 'Production Foundation/CoreText/storage paths and offline release mocks; no simulator, device, accounts or uploads.', 'passed': all(result['passed'
-118:     (output / 'results.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
-119:     raise SystemExit(0 if report['passed'] else 1)
-120: 
+2: """Check raw story flag persistence independently of the live local UI override."""
+3: from pathlib import Path
+4: import subprocess
+5: import tempfile
+6: 
+7: root = Path(__file__).resolve().parents[1]
+8: raw = (root / 'submodules/TelegramCore/Sources/TelegramEngine/Messages/Stories.swift').read_text().splitlines()
+9: projection = (root / 'submodules/TelegramCore/Sources/TelegramEngine/Messages/StoryListContext.swift').read_text().splitlines()
+10: constructor = next(line for line in raw if 'self.isForwardingDisabled = isForwardingDisabled' in line)
+11: decoder = next(line for line in raw if 'self.isForwardingDisabled =' in line and 'decodeIfPresent' in line)
+12: encoder = next(line for line in raw if 'try container.encode(self.isForwardingDisabled,' in line)
+13: effective = next(line.strip() for line in projection if 'public var isForwardingDisabled: Bool {' in line)
+14: source = '''import Foundation
+15: final class RGSimpleSettings { static let shared = RGSimpleSettings(); var allowDownloadingStories = false }
+16: struct RawStory: Codable {
+17:  enum CodingKeys: String, CodingKey { case isForwardingDisabled }
+18:  let isForwardingDisabled: Bool
+19:  init(isForwardingDisabled: Bool) {
+20: ''' + constructor + '''
+21:  }
+22:  init(from decoder: Decoder) throws { let container = try decoder.container(keyedBy: CodingKeys.self)
+23: ''' + decoder + '''
+24:  }
+25:  func encode(to encoder: Encoder) throws { var container = encoder.container(keyedBy: CodingKeys.self)
+26: ''' + encoder + '''
+27:  }
+28: }
+29: struct Projection {
+30:  let serverForwardingDisabled: Bool
+31: ''' + effective + '''
+32: }
+33: @main enum Checks {
+34:  static func main() throws {
+35:   let settings = RGSimpleSettings.shared, encoder = JSONEncoder(), decoder = JSONDecoder()
+36:   let original = try encoder.encode(RawStory(isForwardingDisabled: true))
+37:   let live = Projection(serverForwardingDisabled: true)
+38:   precondition(live.isForwardingDisabled)
+39:   settings.allowDownloadingStories = true
+40:   precondition(!live.isForwardingDisabled)
+41:   let incoming = try encoder.encode(RawStory(isForwardingDisabled: true))
+42:   let reread = try decoder.decode(RawStory.self, from: original)
+43:   let rewritten = try encoder.encode(reread)
+44:   precondition(reread.isForwardingDisabled)
+45:   settings.allowDownloadingStories = false
+46:   for data in [original, incoming, rewritten] {
+47:    let value = try decoder.decode(RawStory.self, from: data)
+48:    precondition(value.isForwardingDisabled)
+49:   }
+50:   precondition(live.isForwardingDisabled && !Projection(serverForwardingDisabled: false).isForwardingDisabled)
+51:   print("Story protection passed: raw flags survive parse/save/reopen with the override enabled; existing UI projections honor on/off changes without a refetch.")
+52:  }
+53: }
+54: '''
+55: with tempfile.TemporaryDirectory(prefix='regram-story-flags-') as temporary:
+56:     work = Path(temporary)
+57:     (work / 'Checks.swift').write_text(source)
+58:     subprocess.run(['xcrun', 'swiftc', '-swift-version', '5', '-parse-as-library', '-warnings-as-errors', str(work / 'Checks.swift'), '-o', str(work / 'checks')], check=T
+59:     subprocess.run([str(work / 'checks')], check=True, timeout=10)
 
-## OUTLINE Regram/RGInputToolbar/Sources/RGInputToolbar.swift (218 lines)
-6: public struct ChatToolbarView: View {
-23: public init(
-53: public func setShowNewLine(_ value: Bool) {
-104: if #available(iOS 16.4, *) {
-147: @available(iOS 13.0, *)
-148: struct BlurView: UIViewRepresentable {
-150: func makeUIView(context: Context) -> UIVisualEffectView {
-153: func updateUIView(_ uiView: UIVisualEffectView, context: Context) {
-159: @available(iOS 13.0, *)
-160: struct Glass: View {
-168: if #available(iOS 15.0, *) {
-202: @available(iOS 13.0, *)
-203: struct ToolbarButtonStyle: ButtonStyle {
-206: func makeBody(configuration: Configuration) -> some View {
+## GREP Regram network calls
+-- Regram/RGAPI/Sources/RGAPI.swift:43
+           
+           var request = URLRequest(url: url)
+-- Regram/RGAPI/Sources/RGAPI.swift:83
+           
+           var request = URLRequest(url: url)
+-- Regram/RGAPI/Sources/RGAPI.swift:131
+           
+           var request = URLRequest(url: url)
+-- Regram/RGGTranslate/Sources/RGExternalTranslateProviders.swift:37
+       }
+       var request = URLRequest(url: url)
+-- Regram/RGGTranslate/Sources/RGExternalTranslateProviders.swift:88
+       }
+       var request = URLRequest(url: url)
+-- Regram/RGGTranslate/Sources/RGExternalTranslateProviders.swift:115
+           }
+           var request = URLRequest(url: url)
+-- Regram/RGGTranslate/Sources/RGExternalTranslateProviders.swift:140
+       }
+       var request = URLRequest(url: url)
+-- Regram/RGGTranslate/Sources/RGExternalTranslateProviders.swift:172
+       let source = fromLang.flatMap { $0.isEmpty || $0 == "auto" ? nil : rgBaseLanguageCode($0) }
+       var request = URLRequest(url: url)
+-- Regram/RGGTranslate/Sources/RGExternalTranslateProviders.swift:216
+       }
+       var request = URLRequest(url: url)
+-- Regram/RGGTranslate/Sources/RGGTranslate.swift:9
+   
+   private let rgTranslateSessionConfiguration: URLSessionConfiguration = .ephemeral
+-- Regram/RGGTranslate/Sources/RGGTranslate.swift:10
+   private let rgTranslateSessionConfiguration: URLSessionConfiguration = .ephemeral
+   private let rgTranslateSession: URLSession = URLSession(configuration: rgTranslateSessionConfiguration)
+-- Regram/RGGTranslate/Sources/RGGTranslate.swift:36
+           let completed: Atomic<Bool> = Atomic(value: false)
+           let downloadTask: URLSessionDataTask = rgTranslateSession.dataTask(with: request, completionHandler: { data, response, _ in
+-- Regram/RGGTranslate/Sources/RGGTranslate.swift:56
+   private func rgTranslateRequestData(url: URL, userAgent: String) -> Signal<Data, TranslateFetchError> {
+       var request: URLRequest = URLRequest(url: url)
+-- Regram/RGGTranslate/Sources/RGLLMTranslate.swift:201
+   
+   private let rgLLMSession: URLSession = URLSession(configuration: .ephemeral)
+-- Regram/RGGTranslate/Sources/RGLLMTranslate.swift:336
+       }
+       var request = URLRequest(url: url)
+-- Regram/RGGTranslate/Sources/RGLLMTranslate.swift:462
+       }
+       var request = URLRequest(url: url)
+-- Regram/RGTypography/Sources/RGFontStore.swift:51
+       private var progressObservation: NSKeyValueObservation?
+       private var activeTask: URLSessionDownloadTask?
+-- Regram/RGTypography/Sources/RGFontStore.swift:111
+           return try await withCheckedThrowingContinuation { continuation in
+                   let task = URLSession.shared.downloadTask(with: url) { temporary, response, error in
+-- Regram/RGTranscription/Sources/RGOpenAITranscriptionProvider.swift:108
+                       }
+                       var request = URLRequest(url: configuration.url)
+-- Regram/RGTranscription/Sources/RGOpenAITranscriptionProvider.swift:116
+                       }
+                       let sessionConfiguration = URLSessionConfiguration.ephemeral
+-- Regram/RGTranscription/Sources/RGOpenAITranscriptionProvider.swift:118
+                       sessionConfiguration.timeoutIntervalForResource = 180
+                       let session = URLSession(configuration: sessionConfiguration, delegate: RGSTTRedirectDelegate(), delegateQueue: nil)
+-- Regram/RGTranscription/Sources/RGOpenAITranscriptionProvider.swift:157
+   
+   private final class RGSTTRedirectDelegate: NSObject, URLSessionTaskDelegate {
+-- Regram/RGTranscription/Sources/RGOpenAITranscriptionProvider.swift:158
+   private final class RGSTTRedirectDelegate: NSObject, URLSessionTaskDelegate {
+       func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
+-- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:11
+   
+   private final class RGUpdateNetworkDelegate: NSObject, URLSessionTaskDelegate, URLSessionDataDelegate, @unchecked Sendable {
+-- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:15
+       init(service: URL?, maximumSize: Int64) { self.service = service; self.maximumSize = maximumSize }
+       func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
+-- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:26
+       }
+       func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.Re
+-- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:375
+                   defer { session.invalidateAndCancel() }
+                   var request = URLRequest(url: URL(string: "https://api.github.com/repos/RegramDev/Regram-ios/releases/latest")!)
+-- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:613
+                       do {
+                           var request = URLRequest(url: node.baseURL.appendingPathComponent("ota/manifest"))
+-- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:801
+   
+       private func makeSession(_ delegate: RGUpdateNetworkDelegate) -> URLSession {
+-- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:802
+       private func makeSession(_ delegate: RGUpdateNetworkDelegate) -> URLSession {
+           return URLSession(configuration: networkConfiguration(), delegate: delegate, delegateQueue: nil)
+-- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:805
+   
+       private func networkConfiguration() -> URLSessionConfiguration {
+-- Regram/RGAppUpdate/Sources/RGAppUpdater.swift:806
+       private func networkConfiguration() -> URLSessionConfiguration {
+           let config = URLSessionConfiguration.ephemeral
+-- Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift:4
+   
+   final class RGUpdateBackgroundDownload: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
+-- Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift:17
+       private var package: URL { directory.appendingPathComponent("incoming.ipa") }
+       private var session: URLSession?
+-- Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift:18
+       private var session: URLSession?
+       private var task: URLSessionDownloadTask?
+-- Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift:39
+   
+       private func getSession() -> URLSession {
+-- Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift:41
+           if let session { return session }
+           let configuration = URLSessionConfiguration.background(withIdentifier: Self.identifier)
+-- Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift:45
+           configuration.httpCookieStorage = nil; configuration.urlCredentialStorage = nil
+           let session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+-- Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift:77
+                           if self.job?.complete == true { self.complete(.success(self.package)); return }
+                           let matches = tasks.compactMap { $0 as? URLSessionDownloadTask }.filter { $0.originalRequest?.url == release.downloadURL && $0
+-- Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift:137
+   
+       func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalByte
+...cut
+
+## Regram/RGAppUpdate files
+814  Regram/RGAppUpdate/Sources/RGAppUpdater.swift
+66  Regram/RGAppUpdate/Sources/RGLCSignInstallation.swift
+157  Regram/RGAppUpdate/Sources/RGLocalUpdateServer.swift
+37  Regram/RGAppUpdate/Sources/RGTrollStoreInstallation.swift
+185  Regram/RGAppUpdate/Sources/RGUpdateBackgroundDownload.swift
+155  Regram/RGAppUpdate/Sources/RGUpdateCache.swift
+47  Regram/RGAppUpdate/Sources/RGUpdateCredentialFile.swift
+23  Regram/RGAppUpdate/Sources/RGUpdateDeliveryTracker.swift
+99  Regram/RGAppUpdate/Sources/RGUpdateDownload.swift
+21  Regram/RGAppUpdate/Sources/RGUpdateIdentity.swift
+33  Regram/RGAppUpdate/Sources/RGUpdateKeychain.swift
+93  Regram/RGAppUpdate/Sources/RGUpdateLiveActivity.swift
+24  Regram/RGAppUpdate/Sources/RGUpdatePrompt.swift
+114  Regram/RGAppUpdate/Sources/RGUpdateRelease.swift
+23  Regram/RGAppUpdate/Sources/RGUpdateSettingsLink.swift
+100  Regram/RGAppUpdate/Tests/BackgroundDownloadTests.swift
+43  Regram/RGAppUpdate/Tests/BackgroundDownloadTransport.swift
+31  Regram/RGAppUpdate/Tests/CredentialFileTests.swift
+65  Regram/RGAppUpdate/Tests/CredentialPersistenceHost.swift
+64  Regram/RGAppUpdate/Tests/DownloadProgressTests.swift
+38  Regram/RGAppUpdate/Tests/LiveActivityKitFixture.swift
+73  Regram/RGAppUpdate/Tests/LiveActivityTests.swift
+87  Regram/RGAppUpdate/Tests/LocalUpdateServerTests.swift
+24  Regram/RGAppUpdate/Tests/TrollStoreInstallationTests.swift
+98  Regram/RGAppUpdate/Tests/UpdateCacheTests.swift
+21  Regram/RGAppUpdate/Tests/UpdateDeliveryTrackerTests.swift
+33  Regram/RGAppUpdate/Tests/UpdatePromptTests.swift
+73  Regram/RGAppUpdate/Tests/UpdateReleaseTests.swift
