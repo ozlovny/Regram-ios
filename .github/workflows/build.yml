@@ -28,6 +28,9 @@ jobs:
       - name: Apply lite patches
         run: python3 build-system/ci/lite_patch.py
 
+      - name: Apply extra patches
+        run: python3 build-system/ci/lite_patch_extra.py
+
       - name: Prepare encrypted configuration
         env:
           REGRAM_BUILD_CONFIGURATION: ${{ secrets.REGRAM_BUILD_CONFIGURATION }}
